@@ -43,6 +43,14 @@ export interface AnalysisRecord {
   // Real predictions are only ever populated once ml/inference.py (Phase 3)
   // is wired up through the backend. Never fabricated client-side.
   prediction: PredictionResult | null;
+  // Set when the backend (app/backend) actually processed this image —
+  // absent when the backend was unreachable and the app fell back to
+  // client-only quality checks.
+  backend?: {
+    croppedWidth: number;
+    croppedHeight: number;
+    preprocessingTimeMs: number;
+  };
 }
 
 export interface StoredImageBlob {

@@ -1,7 +1,9 @@
-import { MODEL_STATUS } from "../lib/modelStatus";
+import { useModelStatus } from "../hooks/useStatus";
 
 export default function ModelStatusCard() {
-  const { available } = MODEL_STATUS;
+  const { status, backendReachable } = useModelStatus();
+  const { available } = status;
+
   return (
     <div className="rounded-lg border border-clinic-200 bg-white p-5">
       <div className="flex items-center justify-between mb-3">
@@ -28,24 +30,29 @@ export default function ModelStatusCard() {
       <dl className="space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-clinic-500">Task</dt>
-          <dd className="text-clinic-800 text-right">{MODEL_STATUS.task}</dd>
+          <dd className="text-clinic-800 text-right">{status.task}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-clinic-500">Architecture</dt>
           <dd className="text-clinic-800 tabular">
-            {MODEL_STATUS.architecture ?? "—"}
+            {status.architecture ?? "—"}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-clinic-500">Version</dt>
-          <dd className="text-clinic-800 tabular">
-            {MODEL_STATUS.version ?? "—"}
-          </dd>
+          <dd className="text-clinic-800 tabular">{status.version ?? "—"}</dd>
         </div>
       </dl>
 
       <p className="mt-3 pt-3 border-t border-clinic-100 text-xs text-clinic-500 leading-relaxed">
-        {MODEL_STATUS.note}
+        {status.note}
+        {!backendReachable && (
+          <>
+            {" "}
+            Backend API is unreachable — showing the last known/default
+            status.
+          </>
+        )}
       </p>
     </div>
   );

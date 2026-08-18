@@ -1,6 +1,7 @@
 import { useCallback, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { checkImageQuality, SUPPORTED_MIME_TYPES } from "../lib/imageQuality";
+import { analyzeImage } from "../lib/api";
 import { saveAnalysis } from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
 
@@ -37,17 +38,35 @@ export default function UploadZone() {
           return;
         }
 
+        // The backend re-validates and preprocesses (crop/resize) — when
+        // reachable, its result is authoritative. When it isn't (not
+        // running, offline), we fall back to the client-only check above
+        // rather than blocking the upload.
+        const backendResult = await analyzeImage(file);
+
+        if (backendResult && "code" in backendResult) {
+          setError(backendResult.message);
+          return;
+        }
+
         const id = crypto.randomUUID();
         const record: AnalysisRecord = {
           id,
           filename: file.name,
           createdAt: Date.now(),
-          width: dimensions?.width ?? 0,
-          height: dimensions?.height ?? 0,
+          width: backendResult?.width ?? dimensions?.width ?? 0,
+          height: backendResult?.height ?? dimensions?.height ?? 0,
           fileSizeBytes: file.size,
           mimeType: file.type,
-          quality: check,
-          prediction: null,
+          quality: backendResult?.quality ?? check,
+          prediction: backendResult?.prediction ?? null,
+          backend: backendResult
+            ? {
+                croppedWidth: backendResult.croppedWidth,
+                croppedHeight: backendResult.croppedHeight,
+                preprocessingTimeMs: backendResult.preprocessingTimeMs,
+              }
+            : undefined,
         };
 
         await saveAnalysis(record, file);

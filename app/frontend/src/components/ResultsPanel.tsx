@@ -66,6 +66,19 @@ export default function ResultsPanel({ record }: { record: AnalysisRecord }) {
           <dd className="text-clinic-800 tabular text-right">
             {prediction ? `${prediction.processingTimeMs} ms` : "—"}
           </dd>
+          {record.backend && (
+            <>
+              <dt className="text-clinic-500">Preprocessing time</dt>
+              <dd className="text-clinic-800 tabular text-right">
+                {record.backend.preprocessingTimeMs} ms
+              </dd>
+              <dt className="text-clinic-500">Cropped size</dt>
+              <dd className="text-clinic-800 tabular text-right">
+                {record.backend.croppedWidth} × {record.backend.croppedHeight}
+                px
+              </dd>
+            </>
+          )}
         </dl>
       </div>
     </div>
