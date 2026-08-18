@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kill -0 82211)",
+      "Bash(git add *)"
+    ]
+  }
+}
