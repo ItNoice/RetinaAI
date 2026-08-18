@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "retinaai-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "app/frontend", "run", "dev", "--", "--host"],
+      "port": 5173
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+app/frontend/dist/
+app/frontend/.vite/
+*.log
+npm-debug.log*
+
+# ML artifacts — never commit weights or raw datasets
+models/*.pt
+models/*.pth
+models/*.onnx
+datasets/*
+!datasets/.gitkeep
+!datasets/README.md
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local
