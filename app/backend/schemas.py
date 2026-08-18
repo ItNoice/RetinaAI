@@ -10,8 +10,6 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-DR_CLASSES: list[str] = ["No DR", "Mild", "Moderate", "Severe", "Proliferative"]
-
 QualityIssue = Literal["not-an-image", "too-small", "file-too-large", "corrupted"]
 
 

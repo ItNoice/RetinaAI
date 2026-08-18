@@ -1,8 +1,9 @@
 """RetinaAI backend API.
 
-Serves image validation/preprocessing today; Phase 3 adds real model
-inference to the /api/analyze endpoint (currently always returns
-prediction: null — never a fabricated result).
+Serves image validation/preprocessing, and — when a trained checkpoint is
+present at ml.inference.MODEL_PATH — real model inference. /api/analyze
+returns prediction: null whenever no model is loaded; it never fabricates a
+result.
 """
 
 from __future__ import annotations
@@ -20,10 +21,18 @@ if str(REPO_ROOT) not in sys.path:
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from ml.inference import predict
 from ml.preprocessing import ImageValidationError, preprocess
 
-from .schemas import AnalyzeResponse, DatasetStatusResponse, ModelStatusResponse, QualityCheck
-from .status import DATASET_STATUS, MODEL_STATUS
+from .schemas import (
+    AnalyzeResponse,
+    DatasetStatusResponse,
+    ModelStatusResponse,
+    PredictionResult,
+    QualityCheck,
+)
+from .status import dataset_status as get_dataset_status
+from .status import model_status as get_model_status
 
 app = FastAPI(
     title="RetinaAI API",
@@ -53,12 +62,12 @@ def health() -> dict[str, str]:
 
 @app.get("/api/model/status", response_model=ModelStatusResponse)
 def model_status() -> ModelStatusResponse:
-    return MODEL_STATUS
+    return get_model_status()
 
 
 @app.get("/api/dataset/status", response_model=DatasetStatusResponse)
 def dataset_status() -> DatasetStatusResponse:
-    return DATASET_STATUS
+    return get_dataset_status()
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
@@ -85,6 +94,20 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
         else QualityCheck(passed=True, issues=[], message=None)
     )
 
+    # None whenever no checkpoint is loaded — never a fabricated result.
+    raw_prediction = predict(result.normalized)
+    prediction = (
+        PredictionResult(
+            model_version=raw_prediction.model_version,
+            processing_time_ms=raw_prediction.processing_time_ms,
+            predicted_class=raw_prediction.predicted_class,
+            confidence=raw_prediction.confidence,
+            probabilities=raw_prediction.probabilities,
+        )
+        if raw_prediction
+        else None
+    )
+
     return AnalyzeResponse(
         width=result.original_width,
         height=result.original_height,
@@ -92,6 +115,5 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
         cropped_height=result.cropped_height,
         quality=quality,
         preprocessing_time_ms=round(elapsed_ms, 2),
-        # Phase 3 will populate this from ml/inference.py. Never fabricated.
-        prediction=None,
+        prediction=prediction,
     )
