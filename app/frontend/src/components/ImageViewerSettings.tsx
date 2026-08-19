@@ -60,6 +60,52 @@ export default function ImageViewerSettings() {
         </div>
       </div>
 
+      <div className="py-2 flex items-center gap-4">
+        <div className="flex-1">
+          <label htmlFor="default-brightness" className="text-sm text-clinic-700">
+            Default brightness
+          </label>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              id="default-brightness"
+              type="range"
+              min={0.5}
+              max={1.5}
+              step={0.05}
+              value={preferences.defaultBrightness}
+              onChange={(e) => setPreference("defaultBrightness", Number(e.target.value))}
+              className="flex-1 accent-accent-500"
+            />
+            <span className="text-sm tabular text-clinic-600 w-10 text-right">
+              {Math.round(preferences.defaultBrightness * 100)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="py-2 flex items-center gap-4">
+        <div className="flex-1">
+          <label htmlFor="default-contrast" className="text-sm text-clinic-700">
+            Default contrast
+          </label>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              id="default-contrast"
+              type="range"
+              min={0.5}
+              max={1.5}
+              step={0.05}
+              value={preferences.defaultContrast}
+              onChange={(e) => setPreference("defaultContrast", Number(e.target.value))}
+              className="flex-1 accent-accent-500"
+            />
+            <span className="text-sm tabular text-clinic-600 w-10 text-right">
+              {Math.round(preferences.defaultContrast * 100)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
       <SettingsToggle
         label="Show image information"
         description="Resolution, file size, format, and cropped size on the analysis screen."

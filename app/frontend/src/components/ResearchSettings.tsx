@@ -8,6 +8,12 @@ export default function ResearchSettings() {
   return (
     <div className="divide-y divide-clinic-100">
       <SettingsToggle
+        label="Research Mode"
+        description="Shows Research, Experiments, and Model Lab in the sidebar, plus a RESEARCH MODE indicator. Off gives a simpler Analyze/Results/History-only view."
+        checked={preferences.researchMode}
+        onChange={(v) => setPreference("researchMode", v)}
+      />
+      <SettingsToggle
         label="Show advanced metrics"
         description="Precision, recall, F1, and ROC-AUC alongside accuracy."
         checked={preferences.showAdvancedMetrics}

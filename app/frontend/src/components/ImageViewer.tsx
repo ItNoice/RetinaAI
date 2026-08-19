@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
+import { useShortcutListener } from "../hooks/useShortcutListener";
 import { enhanceImage } from "../lib/imageEnhance";
 
 type ViewMode = "original" | "heatmap" | "overlay";
+
+export interface ViewerTransform {
+  scale: number;
+  offset: { x: number; y: number };
+  rotation: number; // 0 | 90 | 180 | 270
+}
 
 interface ImageViewerProps {
   imageUrl: string;
@@ -13,35 +20,50 @@ interface ImageViewerProps {
   croppedPreviewUrl?: string | null;
   heatmapUrl?: string | null;
   altText: string;
+  // When provided, zoom/pan/rotation are controlled externally (used by
+  // Compare's synchronized detailed view — two viewers sharing one
+  // transform). Global keyboard shortcuts (F/H/R/+/-) are only wired up in
+  // uncontrolled mode, since two controlled viewers would both react to the
+  // same keypress. Brightness/contrast/view-mode stay per-instance either
+  // way — nothing in the spec asks those to sync.
+  controlled?: {
+    transform: ViewerTransform;
+    onChange: (transform: ViewerTransform) => void;
+  };
 }
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
 const ZOOM_STEP = 0.5;
+const DEFAULT_TRANSFORM: ViewerTransform = { scale: MIN_SCALE, offset: { x: 0, y: 0 }, rotation: 0 };
 
 export default function ImageViewer({
   imageUrl,
   croppedPreviewUrl,
   heatmapUrl,
   altText,
+  controlled,
 }: ImageViewerProps) {
   const { preferences, setPreference } = usePreferences();
   const heatmapAvailable = Boolean(heatmapUrl);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    preferences.defaultViewMode,
-  );
-  const [overlayOpacity, setOverlayOpacity] = useState(
-    preferences.defaultHeatmapOpacity,
-  );
-  const [scale, setScale] = useState(
-    preferences.rememberZoom ? preferences.lastZoomScale : MIN_SCALE,
-  );
-  const [offset, setOffset] = useState(
+  const [viewMode, setViewMode] = useState<ViewMode>(preferences.defaultViewMode);
+  const [overlayOpacity, setOverlayOpacity] = useState(preferences.defaultHeatmapOpacity);
+  const [brightness, setBrightness] = useState(preferences.defaultBrightness);
+  const [contrast, setContrast] = useState(preferences.defaultContrast);
+
+  const [internalTransform, setInternalTransform] = useState<ViewerTransform>(() =>
     preferences.rememberZoom
-      ? { x: preferences.lastZoomOffsetX, y: preferences.lastZoomOffsetY }
-      : { x: 0, y: 0 },
+      ? {
+          scale: preferences.lastZoomScale,
+          offset: { x: preferences.lastZoomOffsetX, y: preferences.lastZoomOffsetY },
+          rotation: 0,
+        }
+      : DEFAULT_TRANSFORM,
   );
+  const transform = controlled ? controlled.transform : internalTransform;
+  const { scale, offset, rotation } = transform;
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
@@ -50,14 +72,21 @@ export default function ImageViewer({
   const imgRef = useRef<HTMLImageElement>(null);
   const panStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
-  const persistZoom = useCallback(
-    (s: number, o: { x: number; y: number }) => {
-      if (!preferences.rememberZoom) return;
-      setPreference("lastZoomScale", s);
-      setPreference("lastZoomOffsetX", o.x);
-      setPreference("lastZoomOffsetY", o.y);
+  const updateTransform = useCallback(
+    (next: Partial<ViewerTransform>) => {
+      const merged: ViewerTransform = { ...transform, ...next };
+      if (controlled) {
+        controlled.onChange(merged);
+      } else {
+        setInternalTransform(merged);
+        if (preferences.rememberZoom) {
+          setPreference("lastZoomScale", merged.scale);
+          setPreference("lastZoomOffsetX", merged.offset.x);
+          setPreference("lastZoomOffsetY", merged.offset.y);
+        }
+      }
     },
-    [preferences.rememberZoom, setPreference],
+    [transform, controlled, preferences.rememberZoom, setPreference],
   );
 
   const clampOffset = useCallback(
@@ -72,35 +101,34 @@ export default function ImageViewer({
     [],
   );
 
-  const zoomIn = () =>
-    setScale((s) => {
-      const next = Math.min(MAX_SCALE, s + ZOOM_STEP);
-      persistZoom(next, offset);
-      return next;
-    });
-  const zoomOut = () =>
-    setScale((s) => {
-      const next = Math.max(MIN_SCALE, s - ZOOM_STEP);
-      const nextOffset = next === 1 ? { x: 0, y: 0 } : offset;
-      if (next === 1) setOffset(nextOffset);
-      persistZoom(next, nextOffset);
-      return next;
-    });
-  const reset = () => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
-    persistZoom(1, { x: 0, y: 0 });
-  };
+  const zoomIn = useCallback(() => {
+    const next = Math.min(MAX_SCALE, scale + ZOOM_STEP);
+    updateTransform({ scale: next });
+  }, [scale, updateTransform]);
+
+  const zoomOut = useCallback(() => {
+    const next = Math.max(MIN_SCALE, scale - ZOOM_STEP);
+    updateTransform({ scale: next, offset: next === 1 ? { x: 0, y: 0 } : offset });
+  }, [scale, offset, updateTransform]);
+
+  const fit = useCallback(() => {
+    updateTransform({ scale: 1, offset: { x: 0, y: 0 } });
+  }, [updateTransform]);
+
+  const rotate = useCallback(() => {
+    updateTransform({ rotation: ((rotation + 90) % 360) as ViewerTransform["rotation"] });
+  }, [rotation, updateTransform]);
+
+  const reset = useCallback(() => {
+    updateTransform(DEFAULT_TRANSFORM);
+    setBrightness(1);
+    setContrast(1);
+  }, [updateTransform]);
 
   const onWheel: React.WheelEventHandler = (e) => {
     e.preventDefault();
-    setScale((s) => {
-      const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s - e.deltaY * 0.0015));
-      const nextOffset = next === 1 ? { x: 0, y: 0 } : offset;
-      if (next === 1) setOffset(nextOffset);
-      persistZoom(next, nextOffset);
-      return next;
-    });
+    const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale - e.deltaY * 0.0015));
+    updateTransform({ scale: next, offset: next === 1 ? { x: 0, y: 0 } : offset });
   };
 
   const onPointerDown: React.PointerEventHandler = (e) => {
@@ -113,28 +141,51 @@ export default function ImageViewer({
     if (!isPanning || !panStart.current) return;
     const dx = e.clientX - panStart.current.x;
     const dy = e.clientY - panStart.current.y;
-    setOffset(clampOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy }, scale));
+    updateTransform({ offset: clampOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy }, scale) });
   };
   const onPointerUp: React.PointerEventHandler = () => {
-    if (isPanning) persistZoom(scale, offset);
     setIsPanning(false);
     panStart.current = null;
   };
 
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
       await containerRef.current.requestFullscreen();
     } else {
       await document.exitFullscreen();
     }
-  };
+  }, []);
+
+  const toggleHeatmapView = useCallback(() => {
+    setViewMode((m) => (m === "original" ? "overlay" : "original"));
+  }, []);
+
+  // Global keyboard shortcuts only act on the uncontrolled (primary) viewer
+  // instance — see the `controlled` prop doc comment above.
+  useShortcutListener("fullscreen", controlled ? () => {} : () => void toggleFullscreen());
+  useShortcutListener("toggle-heatmap", controlled ? () => {} : toggleHeatmapView);
+  useShortcutListener("reset-viewer", controlled ? () => {} : reset);
+  useShortcutListener("zoom-in", controlled ? () => {} : zoomIn);
+  useShortcutListener("zoom-out", controlled ? () => {} : zoomOut);
 
   useEffect(() => {
     const handler = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
+
+  // Settings > AI Analysis > "Auto-show Grad-CAM": switch to overlay the
+  // moment a heatmap transitions from unavailable to available (a fresh
+  // analysis just completed) — not on every mount, so reopening an
+  // already-analyzed image still respects "Default view" instead.
+  const hadHeatmap = useRef(heatmapAvailable);
+  useEffect(() => {
+    if (preferences.autoShowGradCam && heatmapAvailable && !hadHeatmap.current) {
+      setViewMode("overlay");
+    }
+    hadHeatmap.current = heatmapAvailable;
+  }, [heatmapAvailable, preferences.autoShowGradCam]);
 
   // "100%" default zoom = 1 image pixel per screen pixel, computed from the
   // real natural size vs. the object-contain-fitted rendered size — not
@@ -147,7 +198,7 @@ export default function ImageViewer({
     const renderedWidth = img.getBoundingClientRect().width;
     if (!renderedWidth) return;
     const ratio = img.naturalWidth / renderedWidth;
-    setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, ratio)));
+    updateTransform({ scale: Math.max(MIN_SCALE, Math.min(MAX_SCALE, ratio)) });
   };
 
   const showHeatmapLayer = viewMode !== "original" && heatmapAvailable;
@@ -198,7 +249,8 @@ export default function ImageViewer({
         <div
           className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
           style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transform: `rotate(${rotation}deg) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            filter: `brightness(${brightness}) contrast(${contrast})`,
           }}
         >
           <img
@@ -245,9 +297,48 @@ export default function ImageViewer({
           <ViewerButton onClick={zoomIn} label="Zoom in" disabled={scale >= MAX_SCALE} showLabel={preferences.alwaysShowIconLabels}>
             +
           </ViewerButton>
-          <ViewerButton onClick={reset} label="Reset zoom and pan">
+          <ViewerButton onClick={fit} label="Fit to screen">
+            Fit
+          </ViewerButton>
+          <ViewerButton onClick={reset} label="Reset zoom, pan, rotation & adjustments">
             Reset
           </ViewerButton>
+          <ViewerButton onClick={rotate} label="Rotate 90°">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 3.5A6.5 6.5 0 106.5 10M13 3.5V7M13 3.5H9.5" />
+            </svg>
+          </ViewerButton>
+        </div>
+
+        <div className="h-4 w-px bg-chrome-700" aria-hidden="true" />
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="brightness" className="text-xs text-chrome-300">
+            Brightness
+          </label>
+          <input
+            id="brightness"
+            type="range"
+            min={0.5}
+            max={1.5}
+            step={0.05}
+            value={brightness}
+            onChange={(e) => setBrightness(Number(e.target.value))}
+            className="w-16 accent-accent-500"
+          />
+          <label htmlFor="contrast" className="text-xs text-chrome-300">
+            Contrast
+          </label>
+          <input
+            id="contrast"
+            type="range"
+            min={0.5}
+            max={1.5}
+            step={0.05}
+            value={contrast}
+            onChange={(e) => setContrast(Number(e.target.value))}
+            className="w-16 accent-accent-500"
+          />
         </div>
 
         <div className="h-4 w-px bg-chrome-700" aria-hidden="true" />

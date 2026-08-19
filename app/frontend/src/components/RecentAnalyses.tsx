@@ -12,7 +12,7 @@ function formatDate(ts: number) {
   });
 }
 
-export default function RecentAnalyses() {
+export default function RecentAnalyses({ limit }: { limit?: number }) {
   const [records, setRecords] = useState<AnalysisRecord[] | null>(null);
   const { preferences } = usePreferences();
 
@@ -41,9 +41,11 @@ export default function RecentAnalyses() {
     );
   }
 
+  const visible = limit ? records.slice(0, limit) : records;
+
   return (
     <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {records.map((r) => (
+      {visible.map((r) => (
         <li
           key={r.id}
           className="group relative rounded-lg border border-clinic-200 bg-surface overflow-hidden hover:shadow-md transition-shadow"

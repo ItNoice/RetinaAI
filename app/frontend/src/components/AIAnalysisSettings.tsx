@@ -25,6 +25,12 @@ export default function AIAnalysisSettings() {
         onChange={(v) => setPreference("showProbabilityDistribution", v)}
       />
       <SettingsToggle
+        label="Auto-show Grad-CAM"
+        description="Switch the viewer to overlay mode automatically once a fresh analysis with a heatmap completes, instead of leaving it on Original."
+        checked={preferences.autoShowGradCam}
+        onChange={(v) => setPreference("autoShowGradCam", v)}
+      />
+      <SettingsToggle
         label="Show model information"
         description="Model version, in the analysis screen's metadata panel."
         checked={preferences.showModelInfo}

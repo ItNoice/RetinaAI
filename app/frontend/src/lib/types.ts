@@ -50,6 +50,10 @@ export interface QualityCheck {
 export interface AnalysisRecord {
   id: string;
   filename: string;
+  // User-supplied rename (History → Rename). Falls back to `filename`
+  // wherever a display name is needed; the original filename is never
+  // overwritten so it's still available for export/report purposes.
+  label?: string;
   createdAt: number;
   width: number;
   height: number;

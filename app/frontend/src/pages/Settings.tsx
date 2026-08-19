@@ -8,6 +8,7 @@ import StorageSettings from "../components/StorageSettings";
 import PrivacySettings from "../components/PrivacySettings";
 import AccessibilitySettings from "../components/AccessibilitySettings";
 import AdvancedSettings from "../components/AdvancedSettings";
+import ShortcutsSettings from "../components/ShortcutsSettings";
 
 // Each entry is one self-contained settings group. To add a new setting
 // later: build a small component like AppearanceSettings (it owns its own
@@ -60,6 +61,12 @@ const SETTINGS_SECTIONS: SettingsGroup[] = [
     id: "accessibility",
     title: "Accessibility",
     render: () => <AccessibilitySettings />,
+  },
+  {
+    id: "keyboard-shortcuts",
+    title: "Keyboard Shortcuts",
+    description: "Click a binding to record a new key for it.",
+    render: () => <ShortcutsSettings />,
   },
   {
     id: "advanced",

@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { getImageBlob } from "../lib/storage";
+import { getHeatmapBlob, getImageBlob } from "../lib/storage";
 
 export default function AnalysisThumbnail({
   id,
   alt,
+  kind = "image",
 }: {
   id: string;
   alt: string;
+  kind?: "image" | "heatmap";
 }) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let objectUrl: string | null = null;
     let cancelled = false;
-    void getImageBlob(id).then((blob) => {
+    const getBlob = kind === "heatmap" ? getHeatmapBlob : getImageBlob;
+    void getBlob(id).then((blob) => {
       if (cancelled || !blob) return;
       objectUrl = URL.createObjectURL(blob);
       setUrl(objectUrl);
@@ -22,7 +25,7 @@ export default function AnalysisThumbnail({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [id]);
+  }, [id, kind]);
 
   if (!url) {
     return (

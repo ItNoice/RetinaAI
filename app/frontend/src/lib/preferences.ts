@@ -14,6 +14,37 @@ export type DefaultMetric = "accuracy" | "f1" | "recall" | "precision";
 export type DecimalPlaces = 1 | 2 | 4;
 export type AutoDeleteAfter = "never" | 7 | 30;
 
+// One binding per shortcut action — see hooks/useKeyboardShortcuts.ts. "mod"
+// stands for Ctrl on Windows/Linux, Cmd on macOS (resolved at match time).
+export type ShortcutAction =
+  | "upload"
+  | "analyze"
+  | "fullscreen"
+  | "toggleHeatmap"
+  | "resetViewer"
+  | "zoomIn"
+  | "zoomOut"
+  | "prev"
+  | "next"
+  | "help"
+  | "commandPalette";
+
+export type ShortcutBindings = Record<ShortcutAction, string>;
+
+export const DEFAULT_SHORTCUT_BINDINGS: ShortcutBindings = {
+  upload: "u",
+  analyze: "a",
+  fullscreen: "f",
+  toggleHeatmap: "h",
+  resetViewer: "r",
+  zoomIn: "+",
+  zoomOut: "-",
+  prev: "ArrowLeft",
+  next: "ArrowRight",
+  help: "?",
+  commandPalette: "mod+k",
+};
+
 export interface Preferences {
   // Appearance (theme itself is handled separately by ThemeContext)
   accentColor: AccentColor;
@@ -31,6 +62,8 @@ export interface Preferences {
   lastZoomOffsetY: number;
   defaultViewMode: ViewMode;
   defaultHeatmapOpacity: number; // 0-1
+  defaultBrightness: number; // 1 = unchanged, matches CSS filter scale
+  defaultContrast: number; // 1 = unchanged, matches CSS filter scale
   showImageInfo: boolean;
   showQualityAssessment: boolean;
   autoEnhance: boolean;
@@ -43,6 +76,11 @@ export interface Preferences {
   showModelInfo: boolean;
   showProcessingTime: boolean;
   experimentalModelsEnabled: boolean;
+  // Switches the viewer to "overlay" mode automatically once a fresh
+  // analysis with a real Grad-CAM heatmap completes, instead of leaving it
+  // on "Original". Independent of "Default view" above, which only applies
+  // when reopening an *existing* analysis.
+  autoShowGradCam: boolean;
 
   // Research
   showAdvancedMetrics: boolean;
@@ -58,6 +96,10 @@ export interface Preferences {
   storeUploadedImages: boolean;
   autoDeleteAfterDays: AutoDeleteAfter;
   showLocalProcessingIndicator: boolean;
+  // Strips filename and exact timestamp from JSON/report exports, keeping
+  // only relative timing ("analyzed 3 days ago") and the analysis itself.
+  anonymizeExports: boolean;
+  includeImagesInReport: boolean;
 
   // Accessibility
   largerText: boolean;
@@ -67,6 +109,18 @@ export interface Preferences {
   // Advanced
   apiBaseUrlOverride: string | null;
   debugLogging: boolean;
+
+  // Research Mode — a master switch, not just a label. See Sidebar.tsx and
+  // App.tsx: off hides Research/Experiments/Model Lab from primary nav and
+  // gates advanced result panels; on exposes all of it plus a visible
+  // "RESEARCH MODE" indicator.
+  researchMode: boolean;
+
+  // Keyboard shortcuts — see hooks/useKeyboardShortcuts.ts. Always a full
+  // ShortcutBindings map; DEFAULT_PREFERENCES seeds it from
+  // DEFAULT_SHORTCUT_BINDINGS and readStoredPreferences merges in any newer
+  // actions a saved-but-older preferences object is missing.
+  shortcutBindings: ShortcutBindings;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -81,6 +135,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   lastZoomOffsetY: 0,
   defaultViewMode: "original",
   defaultHeatmapOpacity: 0.5,
+  defaultBrightness: 1,
+  defaultContrast: 1,
   showImageInfo: true,
   showQualityAssessment: true,
   autoEnhance: false,
@@ -92,6 +148,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   showModelInfo: true,
   showProcessingTime: true,
   experimentalModelsEnabled: false,
+  autoShowGradCam: false,
 
   showAdvancedMetrics: true,
   showConfusionMatrix: true,
@@ -106,6 +163,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   storeUploadedImages: true,
   autoDeleteAfterDays: "never",
   showLocalProcessingIndicator: true,
+  anonymizeExports: false,
+  includeImagesInReport: true,
 
   largerText: false,
   highContrast: false,
@@ -113,6 +172,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
   apiBaseUrlOverride: null,
   debugLogging: false,
+
+  researchMode: true,
+
+  shortcutBindings: DEFAULT_SHORTCUT_BINDINGS,
 };
 
 const STORAGE_KEY = "retinaai-preferences";
@@ -124,7 +187,17 @@ export function readStoredPreferences(): Preferences {
     const parsed = JSON.parse(raw) as Partial<Preferences>;
     // Merge over defaults so a preferences object saved by an older version
     // of this app (missing newer fields) doesn't produce `undefined`s.
-    return { ...DEFAULT_PREFERENCES, ...parsed };
+    // shortcutBindings needs its own merge — otherwise a saved map from
+    // before a new shortcut action existed would leave that action's key
+    // undefined instead of falling back to its default binding.
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...parsed,
+      shortcutBindings: {
+        ...DEFAULT_SHORTCUT_BINDINGS,
+        ...parsed.shortcutBindings,
+      },
+    };
   } catch {
     return DEFAULT_PREFERENCES;
   }
