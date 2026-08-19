@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
-import { fetchDatasetStatus, fetchModelStatus } from "../lib/api";
+import { fetchDatasetStatus, fetchMetrics, fetchModelStatus } from "../lib/api";
 import {
   DATASET_STATUS,
   MODEL_STATUS,
   type DatasetInfo,
   type ModelStatusInfo,
 } from "../lib/modelStatus";
+import type { MetricsInfo } from "../lib/types";
+
+const EMPTY_METRICS: MetricsInfo = {
+  available: false,
+  note: "No evaluation has been run yet.",
+  train: null,
+  valid: null,
+  test: null,
+};
 
 export function useModelStatus(): {
   status: ModelStatusInfo;
@@ -39,4 +48,24 @@ export function useDatasetStatus(): {
   }, []);
 
   return { status, backendReachable };
+}
+
+export function useMetrics(): {
+  metrics: MetricsInfo;
+  loading: boolean;
+  backendReachable: boolean;
+} {
+  const [metrics, setMetrics] = useState(EMPTY_METRICS);
+  const [loading, setLoading] = useState(true);
+  const [backendReachable, setBackendReachable] = useState(true);
+
+  useEffect(() => {
+    void fetchMetrics().then((result) => {
+      setBackendReachable(result !== null);
+      if (result) setMetrics(result);
+      setLoading(false);
+    });
+  }, []);
+
+  return { metrics, loading, backendReachable };
 }

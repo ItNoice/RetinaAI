@@ -61,3 +61,28 @@ export interface StoredImageBlob {
   id: string;
   blob: Blob;
 }
+
+export type EvalSplit = "train" | "valid" | "test";
+
+export interface SplitMetrics {
+  split: EvalSplit;
+  dataset: string;
+  modelVersion: string;
+  numImagesEvaluated: number;
+  classDistribution: Record<string, number>;
+  accuracy: number;
+  precisionMacro: number;
+  recallMacro: number;
+  f1Macro: number;
+  rocAucMacro: number | null;
+  confusionMatrix: number[][];
+  classNames: string[];
+}
+
+export interface MetricsInfo {
+  available: boolean;
+  note: string;
+  train: SplitMetrics | null;
+  valid: SplitMetrics | null;
+  test: SplitMetrics | null;
+}

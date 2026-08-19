@@ -3,7 +3,14 @@
 // — callers fall back to client-only behavior so the app stays usable
 // without a backend, per the project's "keep functional at every stage"
 // development philosophy.
-import type { DRClass, PredictionResult, QualityCheck } from "./types";
+import type {
+  DRClass,
+  EvalSplit,
+  MetricsInfo,
+  PredictionResult,
+  QualityCheck,
+  SplitMetrics,
+} from "./types";
 import type { ModelStatusInfo, DatasetInfo } from "./modelStatus";
 
 const API_BASE_URL =
@@ -69,6 +76,46 @@ export interface AnalyzeApiError {
   message: string;
 }
 
+interface ApiSplitMetrics {
+  split: EvalSplit;
+  dataset: string;
+  model_version: string;
+  num_images_evaluated: number;
+  class_distribution: Record<string, number>;
+  accuracy: number;
+  precision_macro: number;
+  recall_macro: number;
+  f1_macro: number;
+  roc_auc_macro: number | null;
+  confusion_matrix: number[][];
+  class_names: string[];
+}
+
+interface ApiMetricsResponse {
+  available: boolean;
+  note: string;
+  train: ApiSplitMetrics | null;
+  valid: ApiSplitMetrics | null;
+  test: ApiSplitMetrics | null;
+}
+
+function toSplitMetrics(m: ApiSplitMetrics): SplitMetrics {
+  return {
+    split: m.split,
+    dataset: m.dataset,
+    modelVersion: m.model_version,
+    numImagesEvaluated: m.num_images_evaluated,
+    classDistribution: m.class_distribution,
+    accuracy: m.accuracy,
+    precisionMacro: m.precision_macro,
+    recallMacro: m.recall_macro,
+    f1Macro: m.f1_macro,
+    rocAucMacro: m.roc_auc_macro,
+    confusionMatrix: m.confusion_matrix,
+    classNames: m.class_names,
+  };
+}
+
 async function safeGet<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${API_BASE_URL}${path}`, { method: "GET" });
@@ -101,6 +148,18 @@ export async function fetchDatasetStatus(): Promise<DatasetInfo | null> {
     license: data.license,
     numImages: data.num_images,
     note: data.note,
+  };
+}
+
+export async function fetchMetrics(): Promise<MetricsInfo | null> {
+  const data = await safeGet<ApiMetricsResponse>("/api/metrics");
+  if (!data) return null;
+  return {
+    available: data.available,
+    note: data.note,
+    train: data.train ? toSplitMetrics(data.train) : null,
+    valid: data.valid ? toSplitMetrics(data.valid) : null,
+    test: data.test ? toSplitMetrics(data.test) : null,
   };
 }
 
