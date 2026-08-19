@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import NavDropdown from "./components/NavDropdown";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
@@ -43,19 +44,32 @@ function App() {
               </span>
             </NavLink>
 
-            <nav aria-label="Primary" className="flex items-center gap-1">
+            <nav aria-label="Primary" className="flex items-center gap-1 flex-wrap">
               <NavLink to="/" end className={navLinkClass}>
                 Dashboard
               </NavLink>
-              <NavLink to="/history" className={navLinkClass}>
-                History
-              </NavLink>
-              <NavLink to="/research" className={navLinkClass}>
-                Research
-              </NavLink>
-              <NavLink to="/about" className={navLinkClass}>
-                About &amp; Safety
-              </NavLink>
+              <NavDropdown
+                label="Analyze"
+                items={[
+                  { to: "/history", label: "History" },
+                  { to: "/compare", label: "Compare" },
+                ]}
+              />
+              <NavDropdown
+                label="Model Lab"
+                items={[
+                  { to: "/research", label: "Research" },
+                  { to: "/experiments", label: "Experiments" },
+                ]}
+              />
+              <NavDropdown
+                label="Ophthalmology"
+                items={[
+                  { to: "/methods", label: "Methods" },
+                  { to: "/ethics", label: "Ethics" },
+                  { to: "/about", label: "About & Safety" },
+                ]}
+              />
               <NavLink to="/settings" className={navLinkClass} aria-label="Settings">
                 Settings
               </NavLink>

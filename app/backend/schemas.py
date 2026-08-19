@@ -89,3 +89,21 @@ class MetricsResponse(BaseModel):
     train: SplitMetrics | None = None
     valid: SplitMetrics | None = None
     test: SplitMetrics | None = None
+
+
+class EpochRecord(BaseModel):
+    epoch: int
+    train_loss: float
+    train_acc: float
+    val_loss: float
+    val_acc: float
+    epoch_time_s: float
+
+
+class TrainingLogResponse(BaseModel):
+    available: bool
+    note: str
+    history: list[EpochRecord] = []
+    best_val_acc: float | None = None
+    total_time_s: float | None = None
+    hyperparameters: dict[str, str] = {}

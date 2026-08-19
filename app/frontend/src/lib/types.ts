@@ -102,3 +102,21 @@ export interface MetricsInfo {
   valid: SplitMetrics | null;
   test: SplitMetrics | null;
 }
+
+export interface EpochRecord {
+  epoch: number;
+  trainLoss: number;
+  trainAcc: number;
+  valLoss: number;
+  valAcc: number;
+  epochTimeS: number;
+}
+
+export interface TrainingLogInfo {
+  available: boolean;
+  note: string;
+  history: EpochRecord[];
+  bestValAcc: number | null;
+  totalTimeS: number | null;
+  hyperparameters: Record<string, string>;
+}

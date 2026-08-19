@@ -5,11 +5,13 @@
 // development philosophy.
 import type {
   DRClass,
+  EpochRecord,
   EvalSplit,
   MetricsInfo,
   PredictionResult,
   QualityCheck,
   SplitMetrics,
+  TrainingLogInfo,
 } from "./types";
 import type { ModelStatusInfo, DatasetInfo } from "./modelStatus";
 
@@ -148,6 +150,48 @@ export async function fetchDatasetStatus(): Promise<DatasetInfo | null> {
     license: data.license,
     numImages: data.num_images,
     note: data.note,
+  };
+}
+
+interface ApiEpochRecord {
+  epoch: number;
+  train_loss: number;
+  train_acc: number;
+  val_loss: number;
+  val_acc: number;
+  epoch_time_s: number;
+}
+
+interface ApiTrainingLogResponse {
+  available: boolean;
+  note: string;
+  history: ApiEpochRecord[];
+  best_val_acc: number | null;
+  total_time_s: number | null;
+  hyperparameters: Record<string, string>;
+}
+
+function toEpochRecord(e: ApiEpochRecord): EpochRecord {
+  return {
+    epoch: e.epoch,
+    trainLoss: e.train_loss,
+    trainAcc: e.train_acc,
+    valLoss: e.val_loss,
+    valAcc: e.val_acc,
+    epochTimeS: e.epoch_time_s,
+  };
+}
+
+export async function fetchTrainingLog(): Promise<TrainingLogInfo | null> {
+  const data = await safeGet<ApiTrainingLogResponse>("/api/training-log");
+  if (!data) return null;
+  return {
+    available: data.available,
+    note: data.note,
+    history: data.history.map(toEpochRecord),
+    bestValAcc: data.best_val_acc,
+    totalTimeS: data.total_time_s,
+    hyperparameters: data.hyperparameters,
   };
 }
 

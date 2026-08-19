@@ -99,3 +99,19 @@ def test_analyze_rejects_non_image_upload():
     res = client.post("/api/analyze", files=files)
     assert res.status_code == 422
     assert res.json()["detail"]["code"] == "not-an-image"
+
+
+def test_training_log_is_internally_consistent():
+    res = client.get("/api/training-log")
+    assert res.status_code == 200
+    body = res.json()
+    if not body["available"]:
+        assert body["history"] == []
+        assert body["best_val_acc"] is None
+    else:
+        assert len(body["history"]) > 0
+        for epoch in body["history"]:
+            assert epoch["epoch"] >= 1
+            assert 0.0 <= epoch["train_acc"] <= 1.0
+            assert 0.0 <= epoch["val_acc"] <= 1.0
+        assert body["best_val_acc"] in {e["val_acc"] for e in body["history"]}

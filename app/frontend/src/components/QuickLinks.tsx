@@ -33,6 +33,20 @@ const LINKS: QuickLink[] = [
     ),
   },
   {
+    to: "/compare",
+    title: "Compare",
+    description: "View several scans side by side",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 4v16M16 4v16M4 9h4m8 0h4M4 15h4m8 0h4"
+        />
+      </svg>
+    ),
+  },
+  {
     to: "/research",
     title: "Research",
     description: "Real accuracy, metrics & confusion matrix",
@@ -47,6 +61,49 @@ const LINKS: QuickLink[] = [
     ),
   },
   {
+    to: "/experiments",
+    title: "Experiments",
+    description: "The real per-epoch training run",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 3h6M10 3v5.5L5.5 17a2 2 0 001.8 3h9.4a2 2 0 001.8-3L14 8.5V3"
+        />
+      </svg>
+    ),
+  },
+  {
+    to: "/methods",
+    title: "Methods",
+    description: "The pipeline, model & evaluation approach",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 4.5a8.38 8.38 0 013 6.5c0 4.5-3 7.5-3 7.5s-3-3-3-7.5a8.38 8.38 0 013-6.5z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.5v.01" />
+      </svg>
+    ),
+  },
+  {
+    to: "/ethics",
+    title: "Ethics",
+    description: "Language, consent & honesty principles",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"
+        />
+      </svg>
+    ),
+  },
+  {
     to: "/about",
     title: "About & Safety",
     description: "Disclaimers, limitations, privacy",
@@ -55,7 +112,7 @@ const LINKS: QuickLink[] = [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"
+          d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
         />
       </svg>
     ),

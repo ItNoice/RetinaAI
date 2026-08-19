@@ -10,10 +10,18 @@ from pathlib import Path
 
 from ml.inference import get_model_info
 
-from .schemas import DatasetStatusResponse, MetricsResponse, ModelStatusResponse, SplitMetrics
+from .schemas import (
+    DatasetStatusResponse,
+    EpochRecord,
+    MetricsResponse,
+    ModelStatusResponse,
+    SplitMetrics,
+    TrainingLogResponse,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 METRICS_PATH = REPO_ROOT / "models" / "eval_metrics.json"
+TRAIN_LOG_PATH = REPO_ROOT / "models" / "train_log.json"
 
 TASK_DESCRIPTION = (
     "5-class DR severity grading (No DR / Mild / Moderate / Severe / Proliferative)"
@@ -103,4 +111,28 @@ def metrics_status() -> MetricsResponse:
         train=SplitMetrics(**data["train"]) if "train" in data else None,
         valid=SplitMetrics(**data["valid"]) if "valid" in data else None,
         test=SplitMetrics(**data["test"]) if "test" in data else None,
+    )
+
+
+def training_log() -> TrainingLogResponse:
+    """Reads models/train_log.json, written by ml/train.py — the real
+    per-epoch history of the actual training run that produced
+    dr_classifier.pt. Returns available=False when no run has happened."""
+    if not TRAIN_LOG_PATH.exists():
+        return TrainingLogResponse(
+            available=False,
+            note="No training run has been logged yet. Run ml/train.py to produce one.",
+        )
+
+    data = json.loads(TRAIN_LOG_PATH.read_text())
+    return TrainingLogResponse(
+        available=True,
+        note=(
+            "The actual per-epoch history of the training run that produced "
+            "the currently loaded checkpoint — see ml/train.py."
+        ),
+        history=[EpochRecord(**epoch) for epoch in data["history"]],
+        best_val_acc=data["best_val_acc"],
+        total_time_s=data["total_time_s"],
+        hyperparameters=data["args"],
     )

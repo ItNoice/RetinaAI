@@ -33,10 +33,12 @@ from .schemas import (
     ModelStatusResponse,
     PredictionResult,
     QualityCheck,
+    TrainingLogResponse,
 )
 from .status import dataset_status as get_dataset_status
 from .status import metrics_status as get_metrics_status
 from .status import model_status as get_model_status
+from .status import training_log as get_training_log
 
 app = FastAPI(
     title="RetinaAI API",
@@ -80,6 +82,11 @@ def dataset_status() -> DatasetStatusResponse:
 @app.get("/api/metrics", response_model=MetricsResponse)
 def metrics() -> MetricsResponse:
     return get_metrics_status()
+
+
+@app.get("/api/training-log", response_model=TrainingLogResponse)
+def training_log() -> TrainingLogResponse:
+    return get_training_log()
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)

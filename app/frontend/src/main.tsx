@@ -9,6 +9,10 @@ import Research from "./pages/Research.tsx";
 import About from "./pages/About.tsx";
 import Settings from "./pages/Settings.tsx";
 import History from "./pages/History.tsx";
+import Compare from "./pages/Compare.tsx";
+import Experiments from "./pages/Experiments.tsx";
+import Methods from "./pages/Methods.tsx";
+import Ethics from "./pages/Ethics.tsx";
 import { ThemeProvider } from "./hooks/useTheme.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -23,6 +27,10 @@ createRoot(document.getElementById("root")!).render(
             <Route path="about" element={<About />} />
             <Route path="settings" element={<Settings />} />
             <Route path="history" element={<History />} />
+            <Route path="compare" element={<Compare />} />
+            <Route path="experiments" element={<Experiments />} />
+            <Route path="methods" element={<Methods />} />
+            <Route path="ethics" element={<Ethics />} />
           </Route>
         </Routes>
       </BrowserRouter>

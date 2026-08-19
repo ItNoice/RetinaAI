@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { fetchDatasetStatus, fetchMetrics, fetchModelStatus } from "../lib/api";
+import {
+  fetchDatasetStatus,
+  fetchMetrics,
+  fetchModelStatus,
+  fetchTrainingLog,
+} from "../lib/api";
 import {
   DATASET_STATUS,
   MODEL_STATUS,
   type DatasetInfo,
   type ModelStatusInfo,
 } from "../lib/modelStatus";
-import type { MetricsInfo } from "../lib/types";
+import type { MetricsInfo, TrainingLogInfo } from "../lib/types";
 
 const EMPTY_METRICS: MetricsInfo = {
   available: false,
@@ -14,6 +19,15 @@ const EMPTY_METRICS: MetricsInfo = {
   train: null,
   valid: null,
   test: null,
+};
+
+const EMPTY_TRAINING_LOG: TrainingLogInfo = {
+  available: false,
+  note: "No training run has been logged yet.",
+  history: [],
+  bestValAcc: null,
+  totalTimeS: null,
+  hyperparameters: {},
 };
 
 export function useModelStatus(): {
@@ -68,4 +82,24 @@ export function useMetrics(): {
   }, []);
 
   return { metrics, loading, backendReachable };
+}
+
+export function useTrainingLog(): {
+  trainingLog: TrainingLogInfo;
+  loading: boolean;
+  backendReachable: boolean;
+} {
+  const [trainingLog, setTrainingLog] = useState(EMPTY_TRAINING_LOG);
+  const [loading, setLoading] = useState(true);
+  const [backendReachable, setBackendReachable] = useState(true);
+
+  useEffect(() => {
+    void fetchTrainingLog().then((result) => {
+      setBackendReachable(result !== null);
+      if (result) setTrainingLog(result);
+      setLoading(false);
+    });
+  }, []);
+
+  return { trainingLog, loading, backendReachable };
 }
