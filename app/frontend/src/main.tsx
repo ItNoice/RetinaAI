@@ -8,6 +8,7 @@ import Analysis from "./pages/Analysis.tsx";
 import Research from "./pages/Research.tsx";
 import About from "./pages/About.tsx";
 import Settings from "./pages/Settings.tsx";
+import History from "./pages/History.tsx";
 import { ThemeProvider } from "./hooks/useTheme.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="research" element={<Research />} />
             <Route path="about" element={<About />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="history" element={<History />} />
           </Route>
         </Routes>
       </BrowserRouter>

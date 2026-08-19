@@ -47,6 +47,9 @@ function App() {
               <NavLink to="/" end className={navLinkClass}>
                 Dashboard
               </NavLink>
+              <NavLink to="/history" className={navLinkClass}>
+                History
+              </NavLink>
               <NavLink to="/research" className={navLinkClass}>
                 Research
               </NavLink>

@@ -3,6 +3,7 @@ import UploadZone from "../components/UploadZone";
 import RecentAnalyses from "../components/RecentAnalyses";
 import ModelStatusCard from "../components/ModelStatusCard";
 import DatasetInfoCard from "../components/DatasetInfoCard";
+import QuickLinks from "../components/QuickLinks";
 
 export default function Dashboard() {
   return (
@@ -21,6 +22,8 @@ export default function Dashboard() {
       </div>
 
       <DisclaimerBanner />
+
+      <QuickLinks />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
