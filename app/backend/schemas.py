@@ -58,3 +58,26 @@ class DatasetStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     code: str
     message: str
+
+
+class SplitMetrics(BaseModel):
+    split: Literal["train", "valid", "test"]
+    dataset: str
+    model_version: str
+    num_images_evaluated: int
+    class_distribution: dict[str, int]
+    accuracy: float
+    precision_macro: float
+    recall_macro: float
+    f1_macro: float
+    roc_auc_macro: float | None
+    confusion_matrix: list[list[int]]
+    class_names: list[str]
+
+
+class MetricsResponse(BaseModel):
+    available: bool
+    note: str
+    train: SplitMetrics | None = None
+    valid: SplitMetrics | None = None
+    test: SplitMetrics | None = None

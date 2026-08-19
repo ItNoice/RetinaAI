@@ -27,11 +27,13 @@ from ml.preprocessing import ImageValidationError, preprocess
 from .schemas import (
     AnalyzeResponse,
     DatasetStatusResponse,
+    MetricsResponse,
     ModelStatusResponse,
     PredictionResult,
     QualityCheck,
 )
 from .status import dataset_status as get_dataset_status
+from .status import metrics_status as get_metrics_status
 from .status import model_status as get_model_status
 
 app = FastAPI(
@@ -68,6 +70,11 @@ def model_status() -> ModelStatusResponse:
 @app.get("/api/dataset/status", response_model=DatasetStatusResponse)
 def dataset_status() -> DatasetStatusResponse:
     return get_dataset_status()
+
+
+@app.get("/api/metrics", response_model=MetricsResponse)
+def metrics() -> MetricsResponse:
+    return get_metrics_status()
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)

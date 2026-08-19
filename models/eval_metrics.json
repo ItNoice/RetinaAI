@@ -1,0 +1,188 @@
+{
+  "test": {
+    "split": "test",
+    "dataset": "DDR grading subset (CC BY 4.0) \u2014 see DATASET.md",
+    "model_version": "resnet18-epoch3",
+    "num_images_evaluated": 3759,
+    "class_distribution": {
+      "No DR": 1880,
+      "Mild": 189,
+      "Moderate": 1344,
+      "Severe": 71,
+      "Proliferative": 275
+    },
+    "accuracy": 0.5203511572226656,
+    "precision_macro": 0.46679409888713386,
+    "recall_macro": 0.5025318947498301,
+    "f1_macro": 0.44044681314492884,
+    "roc_auc_macro": 0.8295854383334305,
+    "confusion_matrix": [
+      [
+        1336,
+        411,
+        129,
+        3,
+        1
+      ],
+      [
+        39,
+        74,
+        67,
+        4,
+        5
+      ],
+      [
+        201,
+        639,
+        318,
+        68,
+        118
+      ],
+      [
+        0,
+        17,
+        14,
+        33,
+        7
+      ],
+      [
+        1,
+        22,
+        41,
+        16,
+        195
+      ]
+    ],
+    "class_names": [
+      "No DR",
+      "Mild",
+      "Moderate",
+      "Severe",
+      "Proliferative"
+    ]
+  },
+  "valid": {
+    "split": "valid",
+    "dataset": "DDR grading subset (CC BY 4.0) \u2014 see DATASET.md",
+    "model_version": "resnet18-epoch3",
+    "num_images_evaluated": 2503,
+    "class_distribution": {
+      "No DR": 1253,
+      "Mild": 126,
+      "Moderate": 895,
+      "Severe": 47,
+      "Proliferative": 182
+    },
+    "accuracy": 0.49780263683579706,
+    "precision_macro": 0.45698706728865635,
+    "recall_macro": 0.5527982842995324,
+    "f1_macro": 0.416563649879348,
+    "roc_auc_macro": 0.827760214688473,
+    "confusion_matrix": [
+      [
+        759,
+        401,
+        92,
+        1,
+        0
+      ],
+      [
+        9,
+        62,
+        46,
+        7,
+        2
+      ],
+      [
+        39,
+        294,
+        261,
+        188,
+        113
+      ],
+      [
+        0,
+        4,
+        2,
+        30,
+        11
+      ],
+      [
+        1,
+        11,
+        14,
+        22,
+        134
+      ]
+    ],
+    "class_names": [
+      "No DR",
+      "Mild",
+      "Moderate",
+      "Severe",
+      "Proliferative"
+    ]
+  },
+  "train": {
+    "split": "train",
+    "dataset": "DDR grading subset (CC BY 4.0) \u2014 see DATASET.md",
+    "model_version": "resnet18-epoch3",
+    "num_images_evaluated": 2089,
+    "class_distribution": {
+      "No DR": 600,
+      "Mild": 315,
+      "Moderate": 600,
+      "Severe": 118,
+      "Proliferative": 456
+    },
+    "accuracy": 0.8046912398276688,
+    "precision_macro": 0.8159078090408436,
+    "recall_macro": 0.846460784730187,
+    "f1_macro": 0.8113103873600904,
+    "roc_auc_macro": 0.9733478625690045,
+    "confusion_matrix": [
+      [
+        501,
+        78,
+        19,
+        0,
+        2
+      ],
+      [
+        2,
+        284,
+        26,
+        1,
+        2
+      ],
+      [
+        13,
+        205,
+        364,
+        4,
+        14
+      ],
+      [
+        0,
+        3,
+        0,
+        115,
+        0
+      ],
+      [
+        0,
+        4,
+        8,
+        27,
+        417
+      ]
+    ],
+    "class_names": [
+      "No DR",
+      "Mild",
+      "Moderate",
+      "Severe",
+      "Proliferative"
+    ]
+  }
+}

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(kill -0 82211)",
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(.venv/bin/python -m ml.evaluate --data-root datasets/ddr_raw/extracted/DDR-dataset/DR_grading --split test)"
     ]
   }
 }
