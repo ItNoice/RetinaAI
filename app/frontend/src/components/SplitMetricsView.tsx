@@ -3,7 +3,7 @@ import ConfusionMatrix from "./ConfusionMatrix";
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-clinic-200 bg-white p-4">
+    <div className="rounded-lg border border-clinic-200 bg-surface p-4">
       <p className="text-xs text-clinic-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-clinic-900 tabular">
         {value}
@@ -33,7 +33,7 @@ export default function SplitMetricsView({ metrics }: { metrics: SplitMetrics })
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-lg border border-clinic-200 bg-white p-5">
+        <div className="rounded-lg border border-clinic-200 bg-surface p-5">
           <h3 className="text-sm font-semibold text-clinic-900 mb-1">
             Confusion matrix
           </h3>
@@ -47,7 +47,7 @@ export default function SplitMetricsView({ metrics }: { metrics: SplitMetrics })
           />
         </div>
 
-        <div className="rounded-lg border border-clinic-200 bg-white p-5">
+        <div className="rounded-lg border border-clinic-200 bg-surface p-5">
           <h3 className="text-sm font-semibold text-clinic-900 mb-3">
             Class distribution ({totalClassified} images)
           </h3>

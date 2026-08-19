@@ -21,11 +21,11 @@ export default function About() {
         </h1>
       </div>
 
-      <section className="rounded-lg border border-warn-500/40 bg-warn-100 p-5">
-        <h2 className="text-sm font-semibold text-warn-700">
+      <section className="rounded-lg border border-warn-500/40 bg-warn-soft p-5">
+        <h2 className="text-sm font-semibold text-warn-soft-ink">
           Not a medical device
         </h2>
-        <p className="mt-2 text-sm text-warn-700 leading-relaxed">
+        <p className="mt-2 text-sm text-warn-soft-ink leading-relaxed">
           This project is an educational and research prototype. It is not a
           medical device and should not be used to diagnose, treat, or make
           clinical decisions about any person. Model predictions may be
@@ -79,12 +79,12 @@ export default function About() {
           <button
             type="button"
             onClick={() => void handleClearAll()}
-            className="text-sm text-danger-700 border border-danger-500/30 bg-danger-100 hover:bg-danger-100/80 px-3 py-1.5 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
+            className="text-sm text-danger-soft-ink border border-danger-500/30 bg-danger-soft hover:opacity-80 px-3 py-1.5 rounded-md transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
           >
             Delete all local data
           </button>
           {cleared && (
-            <p role="status" className="mt-2 text-xs text-ok-700">
+            <p role="status" className="mt-2 text-xs text-ok-soft-ink">
               All locally stored analyses have been deleted.
             </p>
           )}

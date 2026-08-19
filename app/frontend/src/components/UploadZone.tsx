@@ -117,8 +117,8 @@ export default function UploadZone() {
         }}
         className={`relative cursor-pointer rounded-xl border-2 border-dashed px-6 py-14 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${
           isDragging
-            ? "border-accent-500 bg-accent-100/50"
-            : "border-clinic-300 bg-white hover:border-accent-400 hover:bg-clinic-50"
+            ? "border-accent-500 bg-accent-soft/50"
+            : "border-clinic-300 bg-surface hover:border-accent-400 hover:bg-clinic-50"
         }`}
       >
         <input
@@ -164,7 +164,7 @@ export default function UploadZone() {
       {error && (
         <p
           role="alert"
-          className="mt-3 text-sm text-danger-700 bg-danger-100 border border-danger-500/30 rounded-md px-3 py-2"
+          className="mt-3 text-sm text-danger-soft-ink bg-danger-soft border border-danger-500/30 rounded-md px-3 py-2"
         >
           {error}
         </p>
@@ -173,7 +173,7 @@ export default function UploadZone() {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-clinic-900 px-4 py-2 text-sm font-medium text-white hover:bg-clinic-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 transition-colors"
+        className="mt-4 inline-flex items-center gap-2 rounded-md bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 transition-colors"
       >
         Upload retinal image
       </button>

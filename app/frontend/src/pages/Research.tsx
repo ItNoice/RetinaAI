@@ -79,7 +79,7 @@ export default function Research() {
       )}
 
       {!loading && !metrics.available && (
-        <div className="rounded-lg border border-dashed border-clinic-300 bg-white px-6 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-clinic-300 bg-surface px-6 py-12 text-center">
           <p className="text-sm font-medium text-clinic-700">
             No evaluation has been run yet
           </p>
@@ -113,7 +113,7 @@ export default function Research() {
                 onKeyDown={(e) => onTabKeyDown(e, index)}
                 className={`px-4 py-1.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
                   activeSplit === split
-                    ? "bg-white text-clinic-900 shadow-sm font-medium"
+                    ? "bg-surface text-clinic-900 shadow-sm font-medium"
                     : "text-clinic-600 hover:text-clinic-900"
                 }`}
               >

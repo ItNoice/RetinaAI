@@ -4,7 +4,7 @@ export default function DatasetInfoCard() {
   const { status } = useDatasetStatus();
 
   return (
-    <div className="rounded-lg border border-clinic-200 bg-white p-5">
+    <div className="rounded-lg border border-clinic-200 bg-surface p-5">
       <h3 className="text-sm font-semibold text-clinic-900 mb-3">
         Dataset &amp; model provenance
       </h3>

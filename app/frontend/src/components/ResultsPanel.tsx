@@ -15,14 +15,14 @@ export default function ResultsPanel({ record }: { record: AnalysisRecord }) {
       {!quality.passed && (
         <div
           role="alert"
-          className="rounded-md border border-danger-500/30 bg-danger-100 px-3.5 py-2.5 text-sm text-danger-700"
+          className="rounded-md border border-danger-500/30 bg-danger-soft px-3.5 py-2.5 text-sm text-danger-soft-ink"
         >
           {quality.message ??
             "Image quality may be insufficient for reliable model analysis."}
         </div>
       )}
 
-      <div className="rounded-lg border border-clinic-200 bg-white p-5">
+      <div className="rounded-lg border border-clinic-200 bg-surface p-5">
         <h2 className="text-sm font-semibold text-clinic-900 mb-4">
           Analysis result
         </h2>
@@ -43,7 +43,7 @@ export default function ResultsPanel({ record }: { record: AnalysisRecord }) {
         )}
       </div>
 
-      <div className="rounded-lg border border-clinic-200 bg-white p-5">
+      <div className="rounded-lg border border-clinic-200 bg-surface p-5">
         <h2 className="text-sm font-semibold text-clinic-900 mb-3">
           Image metadata
         </h2>
@@ -105,15 +105,15 @@ function PredictionDetails({
           <p className="text-xs uppercase tracking-wide text-clinic-500">
             Confidence
           </p>
-          <p className="text-lg font-semibold text-accent-700 tabular">
+          <p className="text-lg font-semibold text-accent-soft-ink tabular">
             {(prediction.confidence * 100).toFixed(1)}%
           </p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-md bg-accent-100/60 border border-accent-100 px-3.5 py-2.5">
-        <p className="text-xs text-clinic-700 leading-relaxed">
-          <strong className="font-semibold">
+      <div className="mt-4 rounded-md bg-clinic-50 px-3.5 py-2.5">
+        <p className="text-xs text-clinic-600 leading-relaxed">
+          <strong className="font-medium text-clinic-700">
             About the {prediction.predictedClass} grade:
           </strong>{" "}
           {DR_CLASS_DESCRIPTIONS[prediction.predictedClass]}

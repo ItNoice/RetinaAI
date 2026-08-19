@@ -3,12 +3,12 @@ export default function DisclaimerBanner() {
     <div
       role="note"
       aria-label="Medical disclaimer"
-      className="rounded-lg border border-warn-500/40 bg-warn-100 px-4 py-3.5 flex gap-3"
+      className="rounded-lg border border-warn-500/40 bg-warn-soft px-4 py-3.5 flex gap-3"
     >
       <svg
         aria-hidden="true"
         viewBox="0 0 20 20"
-        className="w-5 h-5 shrink-0 text-warn-700 mt-0.5"
+        className="w-5 h-5 shrink-0 text-warn-soft-ink mt-0.5"
         fill="currentColor"
       >
         <path
@@ -17,7 +17,7 @@ export default function DisclaimerBanner() {
           clipRule="evenodd"
         />
       </svg>
-      <p className="text-sm text-warn-700 leading-relaxed">
+      <p className="text-sm text-warn-soft-ink leading-relaxed">
         <strong className="font-semibold">
           This project is an educational and research prototype.
         </strong>{" "}

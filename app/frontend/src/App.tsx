@@ -3,8 +3,8 @@ import { NavLink, Outlet } from "react-router-dom";
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
     isActive
-      ? "bg-accent-100 text-accent-700"
-      : "text-clinic-300 hover:text-white hover:bg-clinic-700/60"
+      ? "bg-accent-soft text-accent-soft-ink"
+      : "text-chrome-300 hover:text-white hover:bg-chrome-700/60"
   }`;
 
 function App() {
@@ -12,12 +12,12 @@ function App() {
     <div className="min-h-screen flex flex-col">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-clinic-900 focus:px-3 focus:py-2 focus:rounded-md focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:text-clinic-900 focus:px-3 focus:py-2 focus:rounded-md focus:shadow-lg"
       >
         Skip to main content
       </a>
 
-      <header className="bg-clinic-900 border-b border-clinic-700">
+      <header className="bg-chrome-900 border-b border-chrome-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <NavLink to="/" className="flex items-center gap-2.5 group">
@@ -43,10 +43,7 @@ function App() {
               </span>
             </NavLink>
 
-            <nav
-              aria-label="Primary"
-              className="flex items-center gap-1"
-            >
+            <nav aria-label="Primary" className="flex items-center gap-1">
               <NavLink to="/" end className={navLinkClass}>
                 Dashboard
               </NavLink>
@@ -56,11 +53,14 @@ function App() {
               <NavLink to="/about" className={navLinkClass}>
                 About &amp; Safety
               </NavLink>
+              <NavLink to="/settings" className={navLinkClass} aria-label="Settings">
+                Settings
+              </NavLink>
             </nav>
           </div>
         </div>
-        <div className="bg-warn-100 border-t border-warn-500/30">
-          <p className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 text-xs text-warn-700 text-center">
+        <div className="bg-warn-soft border-t border-warn-500/30">
+          <p className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 text-xs text-warn-soft-ink text-center">
             Research prototype — not a medical device. Not for diagnosis or
             clinical use.{" "}
             <NavLink to="/about" className="underline font-medium">
@@ -75,8 +75,8 @@ function App() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-clinic-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-xs text-clinic-400 flex flex-col sm:flex-row gap-2 sm:justify-between">
+      <footer className="border-t border-clinic-200 bg-surface">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-xs text-clinic-500 flex flex-col sm:flex-row gap-2 sm:justify-between">
           <span>RetinaAI — educational &amp; research prototype.</span>
           <span>All analysis data stays on this device.</span>
         </div>

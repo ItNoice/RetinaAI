@@ -5,7 +5,7 @@ export default function ModelStatusCard() {
   const { available } = status;
 
   return (
-    <div className="rounded-lg border border-clinic-200 bg-white p-5">
+    <div className="rounded-lg border border-clinic-200 bg-surface p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-clinic-900">
           Model status
@@ -13,7 +13,7 @@ export default function ModelStatusCard() {
         <span
           className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
             available
-              ? "bg-ok-100 text-ok-700"
+              ? "bg-ok-soft text-ok-soft-ink"
               : "bg-clinic-100 text-clinic-500"
           }`}
         >

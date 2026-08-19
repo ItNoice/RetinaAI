@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
       content="RetinaAI — an educational research prototype for AI-assisted retinal fundus image analysis. Not a medical device."
@@ -16,6 +16,21 @@
       rel="stylesheet"
     />
     <title>RetinaAI — Retinal Image Analysis Research Prototype</title>
+    <script>
+      // Applies the saved theme before first paint, so there's no flash of
+      // the wrong theme. Mirrors src/lib/theme.ts's logic in plain JS since
+      // this has to run synchronously, before the app bundle loads.
+      (function () {
+        try {
+          var stored = localStorage.getItem("retinaai-theme");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.setAttribute("data-theme", stored);
+          }
+        } catch (e) {
+          /* localStorage unavailable — falls back to prefers-color-scheme */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

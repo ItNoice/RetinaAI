@@ -31,7 +31,7 @@ export default function RecentAnalyses() {
 
   if (records.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-clinic-300 bg-white px-5 py-8 text-center">
+      <div className="rounded-lg border border-dashed border-clinic-300 bg-surface px-5 py-8 text-center">
         <p className="text-sm text-clinic-500">
           No analyses yet. Upload a retinal image to get started.
         </p>
@@ -44,10 +44,10 @@ export default function RecentAnalyses() {
       {records.map((r) => (
         <li
           key={r.id}
-          className="group relative rounded-lg border border-clinic-200 bg-white overflow-hidden hover:shadow-md transition-shadow"
+          className="group relative rounded-lg border border-clinic-200 bg-surface overflow-hidden hover:shadow-md transition-shadow"
         >
           <Link to={`/analysis/${r.id}`} className="block">
-            <div className="aspect-square bg-clinic-900">
+            <div className="aspect-square bg-chrome-900">
               <AnalysisThumbnail id={r.id} alt={`Retinal image: ${r.filename}`} />
             </div>
             <div className="p-3">
@@ -58,9 +58,9 @@ export default function RecentAnalyses() {
               <span
                 className={`mt-2 inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded ${
                   !r.quality.passed
-                    ? "bg-danger-100 text-danger-700"
+                    ? "bg-danger-soft text-danger-soft-ink"
                     : r.prediction
-                      ? "bg-ok-100 text-ok-700"
+                      ? "bg-ok-soft text-ok-soft-ink"
                       : "bg-clinic-100 text-clinic-500"
                 }`}
               >
@@ -79,7 +79,7 @@ export default function RecentAnalyses() {
               void handleDelete(r.id);
             }}
             aria-label={`Delete analysis of ${r.filename}`}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-clinic-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-opacity"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-chrome-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-opacity"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

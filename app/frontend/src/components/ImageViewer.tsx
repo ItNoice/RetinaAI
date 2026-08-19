@@ -109,7 +109,7 @@ export default function ImageViewer({
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-lg border border-clinic-700 bg-clinic-950 overflow-hidden ${
+      className={`relative rounded-lg border border-chrome-700 bg-chrome-950 overflow-hidden ${
         isFullscreen ? "flex flex-col" : ""
       }`}
     >
@@ -147,18 +147,18 @@ export default function ImageViewer({
         </div>
 
         {!heatmapAvailable && viewMode !== "original" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-clinic-950/80 text-clinic-300 text-sm px-6 text-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-chrome-950/80 text-chrome-300 text-sm px-6 text-center">
             No Grad-CAM heatmap is available for this image.
           </div>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 bg-clinic-900 px-3 py-2.5 border-t border-clinic-700">
+      <div className="flex flex-wrap items-center gap-3 bg-chrome-900 px-3 py-2.5 border-t border-chrome-700">
         <div className="flex items-center gap-1" role="group" aria-label="Zoom controls">
           <ViewerButton onClick={zoomOut} label="Zoom out" disabled={scale <= MIN_SCALE}>
             −
           </ViewerButton>
-          <span className="text-xs text-clinic-300 tabular w-12 text-center" aria-live="polite">
+          <span className="text-xs text-chrome-300 tabular w-12 text-center" aria-live="polite">
             {Math.round(scale * 100)}%
           </span>
           <ViewerButton onClick={zoomIn} label="Zoom in" disabled={scale >= MAX_SCALE}>
@@ -169,12 +169,12 @@ export default function ImageViewer({
           </ViewerButton>
         </div>
 
-        <div className="h-4 w-px bg-clinic-700" aria-hidden="true" />
+        <div className="h-4 w-px bg-chrome-700" aria-hidden="true" />
 
         <div
           role="group"
           aria-label="Image view mode"
-          className="flex items-center rounded-md bg-clinic-800 p-0.5 text-xs"
+          className="flex items-center rounded-md bg-chrome-800 p-0.5 text-xs"
         >
           {(["original", "heatmap", "overlay"] as ViewMode[]).map((mode) => (
             <button
@@ -186,7 +186,7 @@ export default function ImageViewer({
               className={`px-2.5 py-1 rounded capitalize transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 viewMode === mode
                   ? "bg-accent-600 text-white"
-                  : "text-clinic-300 hover:text-white"
+                  : "text-chrome-300 hover:text-white"
               }`}
               title={
                 mode !== "original" && !heatmapAvailable
@@ -201,7 +201,7 @@ export default function ImageViewer({
 
         {viewMode === "overlay" && (
           <div className="flex items-center gap-2">
-            <label htmlFor="overlay-opacity" className="text-xs text-clinic-300">
+            <label htmlFor="overlay-opacity" className="text-xs text-chrome-300">
               Opacity
             </label>
             <input
@@ -246,7 +246,7 @@ function ViewerButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="min-w-[1.75rem] h-7 px-2 rounded text-xs font-medium text-clinic-200 bg-clinic-800 hover:bg-clinic-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 transition-colors"
+      className="min-w-[1.75rem] h-7 px-2 rounded text-xs font-medium text-chrome-200 bg-chrome-800 hover:bg-chrome-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 transition-colors"
     >
       {children}
     </button>

@@ -102,7 +102,7 @@ export default function Analysis() {
         <button
           type="button"
           onClick={() => void handleDelete()}
-          className="text-sm text-danger-700 border border-danger-500/30 bg-danger-100 hover:bg-danger-100/80 px-3 py-1.5 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
+          className="text-sm text-danger-soft-ink border border-danger-500/30 bg-danger-soft hover:opacity-80 px-3 py-1.5 rounded-md transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
         >
           Delete analysis
         </button>

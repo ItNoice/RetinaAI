@@ -1,54 +1,157 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ *
+ * Theme tokens. Light values live on :root; dark values are applied
+ * either automatically (prefers-color-scheme, when the user hasn't
+ * chosen) or explicitly via [data-theme] set by ThemeContext. Anything
+ * that reads one of these tokens — the whole `clinic-*` scale below,
+ * plus surface/canvas and the status "soft" pairs — adapts to theme
+ * automatically, with zero changes needed in component className.
+ *
+ * `chrome-*` (defined further down, outside this reactive block) is a
+ * separate, deliberately NON-reactive dark scale used only by the
+ * header and the image viewer — both are meant to stay dark regardless
+ * of reader theme, the way a photo-editing app's canvas chrome does.
+ * ------------------------------------------------------------------ */
+:root {
+  --surface: #ffffff;
+  --canvas: #f7f8fa;
+
+  --clinic-900: #0a0d12;
+  --clinic-800: #12161f;
+  --clinic-700: #1c212e;
+  --clinic-600: #2a3140;
+  --clinic-500: #6b7385;
+  --clinic-400: #9aa1b0;
+  --clinic-300: #b7bcc6;
+  --clinic-200: #dbdee3;
+  --clinic-100: #e9ecef;
+  --clinic-50: #f4f5f7;
+
+  --accent-soft: #dbeafe;
+  --accent-soft-ink: #1d4ed8;
+  --warn-soft: #fef3c7;
+  --warn-soft-ink: #92400e;
+  --danger-soft: #fee2e2;
+  --danger-soft-ink: #b91c1c;
+  --ok-soft: #dcfce7;
+  --ok-soft-ink: #166534;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #12161f;
+    --canvas: #06080c;
+
+    --clinic-50: #141822;
+    --clinic-100: #1c212e;
+    --clinic-200: #262d3d;
+    --clinic-300: #3a4252;
+    --clinic-400: #57606f;
+    --clinic-500: #8b93a3;
+    --clinic-600: #b7bcc6;
+    --clinic-700: #d3d7dd;
+    --clinic-800: #e9ecef;
+    --clinic-900: #f4f5f7;
+
+    --accent-soft: #16233f;
+    --accent-soft-ink: #93c5fd;
+    --warn-soft: #3a2a10;
+    --warn-soft-ink: #fbbf24;
+    --danger-soft: #3a1414;
+    --danger-soft-ink: #fca5a5;
+    --ok-soft: #0f2e1d;
+    --ok-soft-ink: #6ee7b7;
+  }
+}
+
+:root[data-theme="dark"] {
+  --surface: #12161f;
+  --canvas: #06080c;
+
+  --clinic-50: #141822;
+  --clinic-100: #1c212e;
+  --clinic-200: #262d3d;
+  --clinic-300: #3a4252;
+  --clinic-400: #57606f;
+  --clinic-500: #8b93a3;
+  --clinic-600: #b7bcc6;
+  --clinic-700: #d3d7dd;
+  --clinic-800: #e9ecef;
+  --clinic-900: #f4f5f7;
+
+  --accent-soft: #16233f;
+  --accent-soft-ink: #93c5fd;
+  --warn-soft: #3a2a10;
+  --warn-soft-ink: #fbbf24;
+  --danger-soft: #3a1414;
+  --danger-soft-ink: #fca5a5;
+  --ok-soft: #0f2e1d;
+  --ok-soft-ink: #6ee7b7;
+}
+
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* Black / blue / white — a near-neutral black-to-white ramp for
-     structure and ink, plus one crisp blue accent for interactive
-     elements. Functional status colors (warn/danger/ok below) stay
-     outside this ramp on purpose, so they're never confused with brand. */
-  --color-clinic-950: #030507;
-  --color-clinic-900: #0a0d12;
-  --color-clinic-800: #12161f;
-  --color-clinic-700: #1c212e;
-  --color-clinic-600: #2a3140;
-  --color-clinic-500: #454e60;
-  --color-clinic-400: #6b7385;
-  --color-clinic-300: #9aa1b0;
-  --color-clinic-200: #c7ccd6;
-  --color-clinic-100: #e6e9ee;
-  --color-clinic-50: #f7f8fa;
+  /* Theme-reactive — see the token block above */
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
 
+  --color-clinic-900: var(--clinic-900);
+  --color-clinic-800: var(--clinic-800);
+  --color-clinic-700: var(--clinic-700);
+  --color-clinic-600: var(--clinic-600);
+  --color-clinic-500: var(--clinic-500);
+  --color-clinic-400: var(--clinic-400);
+  --color-clinic-300: var(--clinic-300);
+  --color-clinic-200: var(--clinic-200);
+  --color-clinic-100: var(--clinic-100);
+  --color-clinic-50: var(--clinic-50);
+
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-ink: var(--accent-soft-ink);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-soft-ink: var(--warn-soft-ink);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-ink: var(--danger-soft-ink);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-soft-ink: var(--ok-soft-ink);
+
+  /* Fixed — never reactive. Only for the header and the image viewer,
+     which stay dark "instrument chrome" regardless of reader theme. */
+  --color-chrome-950: #030507;
+  --color-chrome-900: #0a0d12;
+  --color-chrome-800: #12161f;
+  --color-chrome-700: #1c212e;
+  --color-chrome-300: #9aa1b0;
+  --color-chrome-200: #c7ccd6;
+
+  /* Solid brand/status colors — a saturated blue/amber/red/green holds
+     up on both light and dark surfaces, so these don't need theme
+     variants; only their pale "soft" backgrounds above do. */
   --color-accent-700: #1d4ed8;
   --color-accent-600: #2563eb;
   --color-accent-500: #3b82f6;
   --color-accent-400: #60a5fa;
-  --color-accent-100: #dbeafe;
 
   --color-warn-700: #92400e;
   --color-warn-500: #d97706;
-  --color-warn-100: #fef3c7;
 
   --color-danger-700: #b91c1c;
   --color-danger-500: #dc2626;
-  --color-danger-100: #fee2e2;
 
   --color-ok-700: #166534;
   --color-ok-500: #16a34a;
-  --color-ok-100: #dcfce7;
 }
 
 @layer base {
-  html {
-    color-scheme: light;
-  }
   body {
-    @apply bg-clinic-50 text-clinic-900 antialiased;
+    @apply bg-canvas text-clinic-900 antialiased;
     font-feature-settings: "cv11", "ss01";
   }
   ::selection {
-    @apply bg-accent-100 text-accent-700;
+    @apply bg-accent-soft text-accent-soft-ink;
   }
 }
 
