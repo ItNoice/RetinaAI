@@ -1,0 +1,97 @@
+{
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.2091356753275804,
+      "train_acc": 0.517472474868358,
+      "val_loss": 1.1120030508760848,
+      "val_acc": 0.5136436597110754,
+      "epoch_time_s": 142.2
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8747600703333028,
+      "train_acc": 0.6247008137865007,
+      "val_loss": 1.0238028070134488,
+      "val_acc": 0.5489566613162119,
+      "epoch_time_s": 148.9
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.744521764318814,
+      "train_acc": 0.6936333173767353,
+      "val_loss": 1.0692738428544462,
+      "val_acc": 0.5987158908507223,
+      "epoch_time_s": 206.5
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.6271775204950454,
+      "train_acc": 0.736237434179033,
+      "val_loss": 1.2894905831419636,
+      "val_acc": 0.48475120385232745,
+      "epoch_time_s": 325.4
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.4531440079183656,
+      "train_acc": 0.8085208233604595,
+      "val_loss": 1.9259538409415256,
+      "val_acc": 0.41412520064205455,
+      "epoch_time_s": 343.8
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.3748815379762204,
+      "train_acc": 0.8477740545715653,
+      "val_loss": 2.651833664165454,
+      "val_acc": 0.449438202247191,
+      "epoch_time_s": 344.9
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.32969977160627734,
+      "train_acc": 0.8693154619435136,
+      "val_loss": 1.6869337020821595,
+      "val_acc": 0.5104333868378812,
+      "epoch_time_s": 120.0
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.2389383620411771,
+      "train_acc": 0.9009095260890378,
+      "val_loss": 1.8229730772168449,
+      "val_acc": 0.5184590690208668,
+      "epoch_time_s": 82.3
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.18071299506723168,
+      "train_acc": 0.9296314025849689,
+      "val_loss": 2.2146479868200006,
+      "val_acc": 0.5248796147672552,
+      "epoch_time_s": 85.7
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.15833871774357605,
+      "train_acc": 0.9368118717089516,
+      "val_loss": 2.1664523706198886,
+      "val_acc": 0.5168539325842697,
+      "epoch_time_s": 88.6
+    }
+  ],
+  "best_val_acc": 0.5987158908507223,
+  "total_time_s": 1888.7,
+  "args": {
+    "data_root": "datasets/ddr_raw/extracted/DDR-dataset/DR_grading",
+    "epochs": "10",
+    "batch_size": "16",
+    "lr": "0.001",
+    "image_size": "224",
+    "max_per_class_train": "600",
+    "max_per_class_valid": "150",
+    "num_workers": "6",
+    "output": "models/dr_classifier.pt"
+  }
+}
