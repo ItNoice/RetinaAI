@@ -43,6 +43,8 @@ interface ApiAnalyzeResponse {
   quality: QualityCheck;
   preprocessing_time_ms: number;
   prediction: ApiPrediction | null;
+  cropped_preview_png_base64: string | null;
+  heatmap_png_base64: string | null;
 }
 
 export interface AnalyzeApiResult {
@@ -53,6 +55,13 @@ export interface AnalyzeApiResult {
   quality: QualityCheck;
   preprocessingTimeMs: number;
   prediction: PredictionResult | null;
+  croppedPreviewBlob: Blob | null;
+  heatmapBlob: Blob | null;
+}
+
+function base64PngToBlob(base64: string): Blob {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  return new Blob([bytes], { type: "image/png" });
 }
 
 export interface AnalyzeApiError {
@@ -139,6 +148,12 @@ export async function analyzeImage(
             number
           >,
         }
+      : null,
+    croppedPreviewBlob: data.cropped_preview_png_base64
+      ? base64PngToBlob(data.cropped_preview_png_base64)
+      : null,
+    heatmapBlob: data.heatmap_png_base64
+      ? base64PngToBlob(data.heatmap_png_base64)
       : null,
   };
 }

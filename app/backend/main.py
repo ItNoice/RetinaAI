@@ -8,6 +8,7 @@ result.
 
 from __future__ import annotations
 
+import base64
 import sys
 import time
 from pathlib import Path
@@ -21,7 +22,8 @@ if str(REPO_ROOT) not in sys.path:
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from ml.inference import predict
+from ml.explainability import generate_gradcam_png
+from ml.inference import get_loaded_model, predict
 from ml.preprocessing import ImageValidationError, preprocess
 
 from .schemas import (
@@ -115,6 +117,17 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
         else None
     )
 
+    cropped_preview_b64: str | None = None
+    heatmap_b64: str | None = None
+    if raw_prediction is not None:
+        model = get_loaded_model()
+        if model is not None:
+            heatmap_png = generate_gradcam_png(
+                model, result.normalized, raw_prediction.predicted_class_idx
+            )
+            heatmap_b64 = base64.b64encode(heatmap_png).decode("ascii")
+            cropped_preview_b64 = base64.b64encode(result.preview_png).decode("ascii")
+
     return AnalyzeResponse(
         width=result.original_width,
         height=result.original_height,
@@ -123,4 +136,6 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
         quality=quality,
         preprocessing_time_ms=round(elapsed_ms, 2),
         prediction=prediction,
+        cropped_preview_png_base64=cropped_preview_b64,
+        heatmap_png_base64=heatmap_b64,
     )

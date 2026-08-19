@@ -49,6 +49,10 @@ export default function UploadZone() {
           return;
         }
 
+        const hasExplainability = Boolean(
+          backendResult?.croppedPreviewBlob && backendResult?.heatmapBlob,
+        );
+
         const id = crypto.randomUUID();
         const record: AnalysisRecord = {
           id,
@@ -67,9 +71,19 @@ export default function UploadZone() {
                 preprocessingTimeMs: backendResult.preprocessingTimeMs,
               }
             : undefined,
+          hasExplainability,
         };
 
-        await saveAnalysis(record, file);
+        await saveAnalysis(
+          record,
+          file,
+          hasExplainability
+            ? {
+                croppedPreviewBlob: backendResult!.croppedPreviewBlob!,
+                heatmapBlob: backendResult!.heatmapBlob!,
+              }
+            : undefined,
+        );
         navigate(`/analysis/${id}`);
       } finally {
         setIsProcessing(false);

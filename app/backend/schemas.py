@@ -36,6 +36,14 @@ class AnalyzeResponse(BaseModel):
     preprocessing_time_ms: float
     # Never fabricated: null until a real model (Phase 3) is wired in.
     prediction: PredictionResult | None = None
+    # The exact cropped+resized image the model analyzed — the frontend
+    # heatmap/overlay views composite on top of this, not the raw upload,
+    # since the heatmap's coordinates only make sense in this frame. Base64
+    # PNG data (no data: prefix). Null whenever prediction is null.
+    cropped_preview_png_base64: str | None = None
+    # Colorized Grad-CAM heatmap, same size as the preview above. Null
+    # whenever prediction is null.
+    heatmap_png_base64: str | None = None
 
 
 class ModelStatusResponse(BaseModel):

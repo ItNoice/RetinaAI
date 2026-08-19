@@ -51,6 +51,10 @@ export interface AnalysisRecord {
     croppedHeight: number;
     preprocessingTimeMs: number;
   };
+  // True when a Grad-CAM heatmap + cropped preview were stored alongside
+  // this analysis (only possible when prediction is non-null). Fetch them
+  // via lib/storage's getCroppedPreviewBlob/getHeatmapBlob.
+  hasExplainability?: boolean;
 }
 
 export interface StoredImageBlob {

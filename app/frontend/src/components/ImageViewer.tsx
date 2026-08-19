@@ -4,6 +4,11 @@ type ViewMode = "original" | "heatmap" | "overlay";
 
 interface ImageViewerProps {
   imageUrl: string;
+  // The exact cropped+resized image the model analyzed. Required for
+  // heatmap/overlay modes — the heatmap's coordinates only line up with
+  // this frame, not the original upload's, since cropping shifts and
+  // rescales the fundus region. Falls back to `imageUrl` when absent.
+  croppedPreviewUrl?: string | null;
   heatmapUrl?: string | null;
   altText: string;
 }
@@ -14,6 +19,7 @@ const ZOOM_STEP = 0.5;
 
 export default function ImageViewer({
   imageUrl,
+  croppedPreviewUrl,
   heatmapUrl,
   altText,
 }: ImageViewerProps) {
@@ -95,6 +101,10 @@ export default function ImageViewer({
   }, []);
 
   const showHeatmapLayer = viewMode !== "original" && heatmapAvailable;
+  // Heatmap/overlay modes must show the cropped preview, not the raw
+  // upload — see the prop comment above.
+  const baseImageUrl =
+    viewMode !== "original" && croppedPreviewUrl ? croppedPreviewUrl : imageUrl;
 
   return (
     <div
@@ -119,7 +129,7 @@ export default function ImageViewer({
           }}
         >
           <img
-            src={imageUrl}
+            src={baseImageUrl}
             alt={altText}
             draggable={false}
             className="max-w-full max-h-full object-contain pointer-events-none"
@@ -138,7 +148,7 @@ export default function ImageViewer({
 
         {!heatmapAvailable && viewMode !== "original" && (
           <div className="absolute inset-0 flex items-center justify-center bg-clinic-950/80 text-clinic-300 text-sm px-6 text-center">
-            Grad-CAM explainability is not available yet.
+            No Grad-CAM heatmap is available for this image.
           </div>
         )}
       </div>
@@ -180,7 +190,7 @@ export default function ImageViewer({
               }`}
               title={
                 mode !== "original" && !heatmapAvailable
-                  ? "Available once Grad-CAM explainability is implemented"
+                  ? "No Grad-CAM heatmap is available for this image (no model was loaded when it was analyzed)"
                   : undefined
               }
             >

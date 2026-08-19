@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteAnalysis, getAnalysis, getImageBlob } from "../lib/storage";
+import {
+  deleteAnalysis,
+  getAnalysis,
+  getCroppedPreviewBlob,
+  getHeatmapBlob,
+  getImageBlob,
+} from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
 import ImageViewer from "../components/ImageViewer";
 import ResultsPanel from "../components/ResultsPanel";
@@ -12,26 +18,44 @@ export default function Analysis() {
     undefined,
   );
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [croppedPreviewUrl, setCroppedPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [heatmapUrl, setHeatmapUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    let objectUrl: string | null = null;
+    const objectUrls: string[] = [];
     let cancelled = false;
 
-    void Promise.all([getAnalysis(id), getImageBlob(id)]).then(
-      ([rec, blob]) => {
-        if (cancelled) return;
-        setRecord(rec ?? null);
-        if (blob) {
-          objectUrl = URL.createObjectURL(blob);
-          setImageUrl(objectUrl);
-        }
-      },
-    );
+    void Promise.all([
+      getAnalysis(id),
+      getImageBlob(id),
+      getCroppedPreviewBlob(id),
+      getHeatmapBlob(id),
+    ]).then(([rec, blob, croppedBlob, heatmapBlob]) => {
+      if (cancelled) return;
+      setRecord(rec ?? null);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        objectUrls.push(url);
+        setImageUrl(url);
+      }
+      if (croppedBlob) {
+        const url = URL.createObjectURL(croppedBlob);
+        objectUrls.push(url);
+        setCroppedPreviewUrl(url);
+      }
+      if (heatmapBlob) {
+        const url = URL.createObjectURL(heatmapBlob);
+        objectUrls.push(url);
+        setHeatmapUrl(url);
+      }
+    });
 
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [id]);
 
@@ -89,17 +113,31 @@ export default function Analysis() {
           {imageUrl ? (
             <ImageViewer
               imageUrl={imageUrl}
-              heatmapUrl={null}
+              croppedPreviewUrl={croppedPreviewUrl}
+              heatmapUrl={heatmapUrl}
               altText={`Retinal fundus photograph: ${record.filename}`}
             />
           ) : (
             <div className="h-96 rounded-lg bg-clinic-100 animate-pulse" />
           )}
           <p className="text-xs text-clinic-500 leading-relaxed">
-            Highlighted regions represent areas that contributed more
-            strongly to the model's prediction. This visualization does not
-            prove that these regions contain disease. Grad-CAM is not yet
-            available in this build.
+            {heatmapUrl ? (
+              <>
+                Highlighted regions represent areas that contributed more
+                strongly to the model's prediction. This visualization does
+                not prove that these regions contain disease. The heatmap
+                and overlay views show the cropped, resized image the model
+                actually analyzed — not the original upload — since the
+                heatmap's coordinates only apply to that frame.
+              </>
+            ) : (
+              <>
+                Highlighted regions represent areas that contributed more
+                strongly to the model's prediction. This visualization does
+                not prove that these regions contain disease. No heatmap is
+                available for this image.
+              </>
+            )}
           </p>
         </div>
 

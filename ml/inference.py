@@ -35,6 +35,7 @@ class Prediction:
     model_version: str
     processing_time_ms: float
     predicted_class: str
+    predicted_class_idx: int
     confidence: float
     probabilities: dict[str, float]
 
@@ -109,6 +110,15 @@ def predict(normalized_image: np.ndarray) -> Prediction | None:
         model_version=get_model_info().version or "unknown",
         processing_time_ms=round(elapsed_ms, 2),
         predicted_class=class_names[predicted_idx],
+        predicted_class_idx=predicted_idx,
         confidence=float(probs[predicted_idx]),
         probabilities={name: float(p) for name, p in zip(class_names, probs)},
     )
+
+
+def get_loaded_model() -> torch.nn.Module | None:
+    """Exposes the cached model for ml.explainability's Grad-CAM, which
+    needs the actual nn.Module (not just its predictions) to hook into
+    layer4's activations/gradients."""
+    model, _ = _holder.get()
+    return model
