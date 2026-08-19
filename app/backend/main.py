@@ -50,10 +50,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    # A fixed port list is brittle in local dev — Vite silently bumps to
+    # 5174, 5175, etc. whenever 5173 is already taken (e.g. another
+    # instance of this app already running), and a mismatched port here
+    # makes the frontend fall back to "backend unreachable" for reasons
+    # that look identical to the backend actually being down. This backend
+    # has no auth and is local-only, so matching any localhost port is safe.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
