@@ -28,15 +28,15 @@ function App() {
                 aria-hidden="true"
                 className="shrink-0"
               >
-                <circle cx="16" cy="16" r="16" fill="#0f1c2b" />
+                <circle cx="16" cy="16" r="16" fill="#0a0d12" />
                 <path
                   d="M4 16c3.5-6 8-9 12-9s8.5 3 12 9c-3.5 6-8 9-12 9s-8.5-3-12-9z"
                   fill="none"
-                  stroke="#3dbdbd"
+                  stroke="#60a5fa"
                   strokeWidth="2"
                 />
-                <circle cx="16" cy="16" r="4.5" fill="#3dbdbd" />
-                <circle cx="16" cy="16" r="1.6" fill="#0a1420" />
+                <circle cx="16" cy="16" r="4.5" fill="#60a5fa" />
+                <circle cx="16" cy="16" r="1.6" fill="#030507" />
               </svg>
               <span className="text-white font-semibold tracking-tight text-lg">
                 Retina<span className="text-accent-400">AI</span>

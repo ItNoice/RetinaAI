@@ -1,16 +1,16 @@
-// Sequential single-hue (the app's teal accent) intensity, normalized per
+// Sequential single-hue (the app's blue accent) intensity, normalized per
 // row (i.e. by proportion of that true class — recall-oriented), light to
 // dark. Every cell keeps a visible numeric label so the count is never
 // color-only, and the diagonal (correct predictions) gets a distinct
 // border rather than relying on position alone.
-const ACCENT_HUE = 178;
-const ACCENT_SATURATION = 55;
+const ACCENT_HUE = 221;
+const ACCENT_SATURATION = 70;
 
 function cellStyle(intensity: number): { background: string; color: string } {
-  const lightness = 92 - intensity * 58; // 92% (near white) -> 34% (dark teal)
+  const lightness = 94 - intensity * 60; // 94% (near white) -> 34% (dark blue)
   return {
     background: `hsl(${ACCENT_HUE} ${ACCENT_SATURATION}% ${lightness}%)`,
-    color: intensity > 0.55 ? "#f4f8fa" : "#0f1c2b",
+    color: intensity > 0.55 ? "#f7f8fa" : "#0a0d12",
   };
 }
 

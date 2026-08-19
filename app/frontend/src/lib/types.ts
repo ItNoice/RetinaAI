@@ -11,6 +11,22 @@ export const DR_CLASSES = [
 
 export type DRClass = (typeof DR_CLASSES)[number];
 
+// General, educational descriptions of what each ICDR severity grade means
+// clinically — not a description of any specific uploaded image. Always
+// paired in the UI with "the model predicted..." framing, never presented
+// as a finding about the user's photograph.
+export const DR_CLASS_DESCRIPTIONS: Record<DRClass, string> = {
+  "No DR":
+    "No visible signs of diabetic retinopathy on this grading scale.",
+  Mild: "Earliest stage — a few microaneurysms (small bulges in the retina's tiny blood vessels) only.",
+  Moderate:
+    "More extensive microaneurysms and small hemorrhages than mild, but not yet meeting severe-stage criteria.",
+  Severe:
+    "Extensive retinal hemorrhages, venous beading, or intraretinal microvascular abnormalities across multiple regions of the retina.",
+  Proliferative:
+    "The most advanced stage — abnormal new blood vessel growth (neovascularization), which can bleed and threaten vision.",
+};
+
 export interface PredictionResult {
   modelVersion: string;
   processingTimeMs: number;

@@ -1,27 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* Clinical / research palette — deliberately restrained, no gradients-as-branding */
-  --color-clinic-950: #0a1420;
-  --color-clinic-900: #0f1c2b;
-  --color-clinic-800: #16273a;
-  --color-clinic-700: #1f3348;
-  --color-clinic-600: #2c4a63;
-  --color-clinic-500: #43647f;
-  --color-clinic-400: #6b8ba3;
-  --color-clinic-300: #9fb8c9;
-  --color-clinic-200: #cddce4;
-  --color-clinic-100: #e7eef2;
-  --color-clinic-50: #f4f8fa;
+  /* Black / blue / white — a near-neutral black-to-white ramp for
+     structure and ink, plus one crisp blue accent for interactive
+     elements. Functional status colors (warn/danger/ok below) stay
+     outside this ramp on purpose, so they're never confused with brand. */
+  --color-clinic-950: #030507;
+  --color-clinic-900: #0a0d12;
+  --color-clinic-800: #12161f;
+  --color-clinic-700: #1c212e;
+  --color-clinic-600: #2a3140;
+  --color-clinic-500: #454e60;
+  --color-clinic-400: #6b7385;
+  --color-clinic-300: #9aa1b0;
+  --color-clinic-200: #c7ccd6;
+  --color-clinic-100: #e6e9ee;
+  --color-clinic-50: #f7f8fa;
 
-  --color-accent-700: #0d6b6b;
-  --color-accent-600: #0f8484;
-  --color-accent-500: #14a3a3;
-  --color-accent-400: #3dbdbd;
-  --color-accent-100: #d9f2f2;
+  --color-accent-700: #1d4ed8;
+  --color-accent-600: #2563eb;
+  --color-accent-500: #3b82f6;
+  --color-accent-400: #60a5fa;
+  --color-accent-100: #dbeafe;
 
   --color-warn-700: #92400e;
   --color-warn-500: #d97706;

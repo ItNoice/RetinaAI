@@ -1,4 +1,4 @@
-import { DR_CLASSES } from "../lib/types";
+import { DR_CLASSES, DR_CLASS_DESCRIPTIONS } from "../lib/types";
 import type { AnalysisRecord } from "../lib/types";
 
 function formatBytes(bytes: number) {
@@ -111,6 +111,15 @@ function PredictionDetails({
         </div>
       </div>
 
+      <div className="mt-4 rounded-md bg-accent-100/60 border border-accent-100 px-3.5 py-2.5">
+        <p className="text-xs text-clinic-700 leading-relaxed">
+          <strong className="font-semibold">
+            About the {prediction.predictedClass} grade:
+          </strong>{" "}
+          {DR_CLASS_DESCRIPTIONS[prediction.predictedClass]}
+        </p>
+      </div>
+
       <div className="mt-5 space-y-2">
         <p className="text-xs uppercase tracking-wide text-clinic-500">
           Probability distribution
@@ -137,7 +146,9 @@ function PredictionDetails({
       <p className="mt-4 text-xs text-clinic-500 leading-relaxed border-t border-clinic-100 pt-3">
         The model classified this image as{" "}
         <strong className="text-clinic-700">{prediction.predictedClass}</strong>.
-        This is not a diagnosis.
+        The grade description above is general educational information about
+        that ICDR stage — not a finding about this specific image. This is
+        not a diagnosis.
       </p>
     </div>
   );
