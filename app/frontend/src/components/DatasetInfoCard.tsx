@@ -29,11 +29,16 @@ export default function DatasetInfoCard() {
         </div>
       </dl>
       <p className="mt-3 pt-3 border-t border-clinic-100 text-xs text-clinic-500 leading-relaxed">
-        {status.note} See{" "}
-        <code className="font-mono text-[11px] bg-clinic-100 px-1 py-0.5 rounded">
-          DATASET.md
-        </code>{" "}
-        for full details once available.
+        {status.note}{" "}
+        {status.name && (
+          <>
+            See{" "}
+            <code className="font-mono text-[11px] bg-clinic-100 px-1 py-0.5 rounded">
+              DATASET.md
+            </code>{" "}
+            for full provenance.
+          </>
+        )}
       </p>
     </div>
   );

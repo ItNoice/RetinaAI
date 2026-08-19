@@ -66,7 +66,7 @@ export interface AnalyzeApiResult {
   heatmapBlob: Blob | null;
 }
 
-function base64PngToBlob(base64: string): Blob {
+export function base64PngToBlob(base64: string): Blob {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   return new Blob([bytes], { type: "image/png" });
 }
@@ -99,7 +99,7 @@ interface ApiMetricsResponse {
   test: ApiSplitMetrics | null;
 }
 
-function toSplitMetrics(m: ApiSplitMetrics): SplitMetrics {
+export function toSplitMetrics(m: ApiSplitMetrics): SplitMetrics {
   return {
     split: m.split,
     dataset: m.dataset,

@@ -25,9 +25,8 @@ DATASET_STATUS = DatasetStatusResponse(
     num_images=13673,
     note=(
         "Full DDR grading-split size shown above; training itself used a "
-        "compute-constrained stratified subset (CPU-only — no GPU "
-        "available). See DATASET.md for the exact counts used and full "
-        "provenance."
+        "smaller, compute-constrained stratified subset (CPU-only — no GPU "
+        "available)."
     ),
 )
 
