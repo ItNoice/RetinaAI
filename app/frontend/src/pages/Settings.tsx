@@ -1,11 +1,18 @@
 import type { ReactNode } from "react";
 import SettingsSection from "../components/SettingsSection";
 import AppearanceSettings from "../components/AppearanceSettings";
+import ImageViewerSettings from "../components/ImageViewerSettings";
+import AIAnalysisSettings from "../components/AIAnalysisSettings";
+import ResearchSettings from "../components/ResearchSettings";
+import StorageSettings from "../components/StorageSettings";
+import PrivacySettings from "../components/PrivacySettings";
+import AccessibilitySettings from "../components/AccessibilitySettings";
+import AdvancedSettings from "../components/AdvancedSettings";
 
 // Each entry is one self-contained settings group. To add a new setting
 // later: build a small component like AppearanceSettings (it owns its own
-// state/persistence — AppearanceSettings uses useTheme/localStorage), then
-// add one entry here. Nothing else on this page needs to change.
+// state/persistence via usePreferences), then add one entry here. Nothing
+// else on this page needs to change.
 interface SettingsGroup {
   id: string;
   title: string;
@@ -19,6 +26,45 @@ const SETTINGS_SECTIONS: SettingsGroup[] = [
     title: "Appearance",
     description: "Choose how RetinaAI looks on this device.",
     render: () => <AppearanceSettings />,
+  },
+  {
+    id: "image-viewer",
+    title: "Image Viewer",
+    description: "Defaults for the retinal image viewer.",
+    render: () => <ImageViewerSettings />,
+  },
+  {
+    id: "ai-analysis",
+    title: "AI Analysis",
+    description: "What runs automatically and what's shown on results.",
+    render: () => <AIAnalysisSettings />,
+  },
+  {
+    id: "research",
+    title: "Research",
+    description: "What's shown on the Research page.",
+    render: () => <ResearchSettings />,
+  },
+  {
+    id: "history-storage",
+    title: "History & Storage",
+    description: "Manage what's kept on this device.",
+    render: () => <StorageSettings />,
+  },
+  {
+    id: "privacy",
+    title: "Privacy",
+    render: () => <PrivacySettings />,
+  },
+  {
+    id: "accessibility",
+    title: "Accessibility",
+    render: () => <AccessibilitySettings />,
+  },
+  {
+    id: "advanced",
+    title: "Advanced",
+    render: () => <AdvancedSettings />,
   },
 ];
 

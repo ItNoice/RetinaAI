@@ -1,18 +1,6 @@
-import { useState } from "react";
-import { clearAllAnalyses } from "../lib/storage";
+import { Link } from "react-router-dom";
 
 export default function About() {
-  const [cleared, setCleared] = useState(false);
-
-  const handleClearAll = async () => {
-    const confirmed = window.confirm(
-      "Delete all locally stored analyses and images from this browser? This cannot be undone.",
-    );
-    if (!confirmed) return;
-    await clearAllAnalyses();
-    setCleared(true);
-  };
-
   return (
     <div className="max-w-3xl space-y-10">
       <div>
@@ -69,26 +57,18 @@ export default function About() {
         </h2>
         <p className="mt-2 text-sm text-clinic-600 leading-relaxed">
           Uploaded images and analysis results are stored only in this
-          browser's local IndexedDB storage — nothing is uploaded to a server
-          in this build. Do not upload images that contain patient names,
+          browser's local IndexedDB storage by default — nothing is
+          uploaded to a server beyond the local backend that performs the
+          analysis itself. Do not upload images that contain patient names,
           dates of birth, medical record numbers, or other identifying
           information. You can delete any single analysis from its page or
-          the dashboard, or remove everything at once below.
+          the dashboard, or manage what's stored — including deleting
+          everything — from{" "}
+          <Link to="/settings" className="text-accent-600 underline">
+            Settings → Privacy / History &amp; Storage
+          </Link>
+          .
         </p>
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={() => void handleClearAll()}
-            className="text-sm text-danger-soft-ink border border-danger-500/30 bg-danger-soft hover:opacity-80 px-3 py-1.5 rounded-md transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500"
-          >
-            Delete all local data
-          </button>
-          {cleared && (
-            <p role="status" className="mt-2 text-xs text-ok-soft-ink">
-              All locally stored analyses have been deleted.
-            </p>
-          )}
-        </div>
       </section>
 
       <section>

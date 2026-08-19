@@ -1,45 +1,59 @@
 import { useTheme } from "../hooks/useTheme";
+import { usePreferences } from "../hooks/usePreferences";
 import type { ThemePreference } from "../lib/theme";
+import { ACCENT_COLOR_LABELS } from "../lib/accentColors";
+import type { AccentColor } from "../lib/preferences";
+import SettingsSegmented from "./SettingsSegmented";
+import SettingsToggle from "./SettingsToggle";
 
-const OPTIONS: { value: ThemePreference; label: string }[] = [
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
 ];
 
+const ACCENT_OPTIONS: { value: AccentColor; label: string }[] = (
+  Object.keys(ACCENT_COLOR_LABELS) as AccentColor[]
+).map((value) => ({ value, label: ACCENT_COLOR_LABELS[value] }));
+
 export default function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
+  const { preferences, setPreference } = usePreferences();
 
   return (
-    <div>
-      <span className="text-sm text-clinic-700" id="theme-label">
-        Theme
-      </span>
-      <div
-        role="radiogroup"
-        aria-labelledby="theme-label"
-        className="mt-2 inline-flex items-center rounded-md bg-clinic-100 p-1 text-sm"
-      >
-        {OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            role="radio"
-            aria-checked={theme === opt.value}
-            onClick={() => setTheme(opt.value)}
-            className={`px-4 py-1.5 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-              theme === opt.value
-                ? "bg-surface text-clinic-900 shadow-sm font-medium"
-                : "text-clinic-600 hover:text-clinic-900"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-clinic-500">
-        "System" follows your device's light/dark setting automatically.
-      </p>
+    <div className="divide-y divide-clinic-100">
+      <SettingsSegmented
+        label="Theme"
+        options={THEME_OPTIONS}
+        value={theme}
+        onChange={setTheme}
+        hint="System follows your device's light/dark setting automatically."
+      />
+
+      <SettingsSegmented
+        label="Accent color"
+        options={ACCENT_OPTIONS}
+        value={preferences.accentColor}
+        onChange={(v) => setPreference("accentColor", v)}
+      />
+
+      <SettingsSegmented
+        label="Interface density"
+        options={[
+          { value: "comfortable" as const, label: "Comfortable" },
+          { value: "compact" as const, label: "Compact" },
+        ]}
+        value={preferences.density}
+        onChange={(v) => setPreference("density", v)}
+        hint="Compact tightens spacing — useful on smaller screens."
+      />
+
+      <SettingsToggle
+        label="Reduce animations"
+        description="Turns off transitions and motion, regardless of your device's setting."
+        checked={preferences.reduceMotion}
+        onChange={(v) => setPreference("reduceMotion", v)}
+      />
     </div>
   );
 }

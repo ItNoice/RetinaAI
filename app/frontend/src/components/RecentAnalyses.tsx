@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteAnalysis, listAnalyses } from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
+import { usePreferences } from "../hooks/usePreferences";
 import AnalysisThumbnail from "./AnalysisThumbnail";
 
 function formatDate(ts: number) {
@@ -13,6 +14,7 @@ function formatDate(ts: number) {
 
 export default function RecentAnalyses() {
   const [records, setRecords] = useState<AnalysisRecord[] | null>(null);
+  const { preferences } = usePreferences();
 
   const refresh = () => {
     void listAnalyses().then(setRecords);
@@ -79,11 +81,16 @@ export default function RecentAnalyses() {
               void handleDelete(r.id);
             }}
             aria-label={`Delete analysis of ${r.filename}`}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-chrome-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-opacity"
+            className={`absolute top-2 right-2 h-7 rounded-full bg-chrome-900/70 text-white flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-opacity ${
+              preferences.alwaysShowIconLabels ? "px-2.5" : "w-7"
+            }`}
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
+            {preferences.alwaysShowIconLabels && (
+              <span className="text-xs">Delete</span>
+            )}
           </button>
         </li>
       ))}

@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import NavDropdown from "./components/NavDropdown";
+import { usePreferences } from "./hooks/usePreferences";
+import { useModelStatus } from "./hooks/useStatus";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
@@ -9,6 +11,9 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 function App() {
+  const { preferences } = usePreferences();
+  const { backendReachable } = useModelStatus();
+
   return (
     <div className="min-h-screen flex flex-col">
       <a
@@ -95,7 +100,22 @@ function App() {
       <footer className="border-t border-clinic-200 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-xs text-clinic-500 flex flex-col sm:flex-row gap-2 sm:justify-between">
           <span>RetinaAI — educational &amp; research prototype.</span>
-          <span>All analysis data stays on this device.</span>
+          <div className="flex items-center gap-4">
+            <span>All analysis data stays on this device.</span>
+            {preferences.showLocalProcessingIndicator && (
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    backendReachable ? "bg-ok-500" : "bg-clinic-400"
+                  }`}
+                  aria-hidden="true"
+                />
+                {backendReachable
+                  ? "Processing locally (backend on this device)"
+                  : "Backend unreachable"}
+              </span>
+            )}
+          </div>
         </div>
       </footer>
     </div>

@@ -28,6 +28,10 @@
   --clinic-100: #e9ecef;
   --clinic-50: #f4f5f7;
 
+  --accent-700: #1d4ed8;
+  --accent-600: #2563eb;
+  --accent-500: #3b82f6;
+  --accent-400: #60a5fa;
   --accent-soft: #dbeafe;
   --accent-soft-ink: #1d4ed8;
   --warn-soft: #fef3c7;
@@ -127,13 +131,17 @@
   --color-chrome-300: #9aa1b0;
   --color-chrome-200: #c7ccd6;
 
-  /* Solid brand/status colors — a saturated blue/amber/red/green holds
-     up on both light and dark surfaces, so these don't need theme
-     variants; only their pale "soft" backgrounds above do. */
-  --color-accent-700: #1d4ed8;
-  --color-accent-600: #2563eb;
-  --color-accent-500: #3b82f6;
-  --color-accent-400: #60a5fa;
+  /* Solid accent colors — user-selectable (Settings > Appearance >
+     Accent color), applied imperatively by lib/accentColors.ts since the
+     choice combines with the current resolved theme. --accent-700 etc.
+     above hold the "blue" default as a CSS-only fallback before that JS
+     runs. Status colors (warn/danger/ok) hold up on both light and dark
+     surfaces without variants, so only their pale "soft" pairs above
+     react to theme. */
+  --color-accent-700: var(--accent-700);
+  --color-accent-600: var(--accent-600);
+  --color-accent-500: var(--accent-500);
+  --color-accent-400: var(--accent-400);
 
   --color-warn-700: #92400e;
   --color-warn-500: #d97706;
@@ -164,6 +172,63 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Settings > Accessibility > Reduce motion — an explicit override of the
+   same effect above, for people who want it off regardless of what their
+   OS reports (or whose OS-level setting this app can't read). */
+html.force-reduce-motion *,
+html.force-reduce-motion *::before,
+html.force-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Settings > Appearance > Interface density. Tailwind spacing utilities
+   are static per-component, so a global "compact mode" tightens the
+   handful of spacing scales actually used across the app rather than
+   requiring every component to read a density token. */
+html.density-compact :where(.p-5) { padding: 0.75rem; }
+html.density-compact :where(.p-4) { padding: 0.625rem; }
+html.density-compact :where(.px-4) { padding-left: 0.75rem; padding-right: 0.75rem; }
+html.density-compact :where(.py-8) { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+html.density-compact :where(.py-3\.5, .py-3) { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+html.density-compact :where(.gap-6) { gap: 0.75rem; }
+html.density-compact :where(.gap-4) { gap: 0.5rem; }
+html.density-compact :where(.gap-3) { gap: 0.375rem; }
+html.density-compact :where(.space-y-8 > * + *) { margin-top: 1.25rem; }
+html.density-compact :where(.space-y-6 > * + *) { margin-top: 0.75rem; }
+html.density-compact :where(.space-y-5 > * + *) { margin-top: 0.625rem; }
+
+/* Settings > Accessibility > Larger text — scales every rem-based
+   Tailwind text size proportionally, since they're all defined in rem. */
+html.larger-text {
+  font-size: 112.5%;
+}
+
+/* Settings > Accessibility > High contrast — darkens secondary/muted text
+   and thickens borders for better separation than the default palette. */
+html.high-contrast {
+  --clinic-500: #454e60;
+  --clinic-400: #2a3140;
+  --clinic-200: #9aa1b0;
+  --clinic-100: #c7ccd6;
+}
+@media (prefers-color-scheme: dark) {
+  html.high-contrast:not([data-theme="light"]) {
+    --clinic-500: #b7bcc6;
+    --clinic-400: #d3d7dd;
+    --clinic-200: #57606f;
+    --clinic-100: #3a4252;
+  }
+}
+html.high-contrast[data-theme="dark"] {
+  --clinic-500: #b7bcc6;
+  --clinic-400: #d3d7dd;
+  --clinic-200: #57606f;
+  --clinic-100: #3a4252;
 }
 
 @layer utilities {

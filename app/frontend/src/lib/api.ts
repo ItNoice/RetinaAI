@@ -14,10 +14,24 @@ import type {
   TrainingLogInfo,
 } from "./types";
 import type { ModelStatusInfo, DatasetInfo } from "./modelStatus";
+import { readStoredPreferences } from "./preferences";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:8000";
+// Re-read on every call (not cached at module load) so Settings > Advanced
+// > API endpoint override takes effect immediately, without a reload.
+function getApiBaseUrl(): string {
+  const override = readStoredPreferences().apiBaseUrlOverride;
+  if (override) return override;
+  return (
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+    "http://localhost:8000"
+  );
+}
+
+function debugLog(...args: unknown[]): void {
+  if (readStoredPreferences().debugLogging) {
+    console.log("[RetinaAI]", ...args);
+  }
+}
 
 interface ApiModelStatus {
   available: boolean;
@@ -119,11 +133,19 @@ export function toSplitMetrics(m: ApiSplitMetrics): SplitMetrics {
 }
 
 async function safeGet<T>(path: string): Promise<T | null> {
+  const url = `${getApiBaseUrl()}${path}`;
   try {
-    const res = await fetch(`${API_BASE_URL}${path}`, { method: "GET" });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
+    debugLog("GET", url);
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) {
+      debugLog("GET", url, "->", res.status);
+      return null;
+    }
+    const data = (await res.json()) as T;
+    debugLog("GET", url, "-> 200", data);
+    return data;
+  } catch (err) {
+    debugLog("GET", url, "-> network error", err);
     return null;
   }
 }
@@ -140,6 +162,28 @@ export async function fetchModelStatus(): Promise<ModelStatusInfo | null> {
     trainedOn: data.trained_on,
     note: data.note,
   };
+}
+
+export async function reloadModel(): Promise<ModelStatusInfo | null> {
+  const url = `${getApiBaseUrl()}/api/model/reload`;
+  try {
+    debugLog("POST", url);
+    const res = await fetch(url, { method: "POST" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as ApiModelStatus;
+    return {
+      available: data.available,
+      name: data.name,
+      version: data.version,
+      architecture: data.architecture,
+      task: data.task,
+      trainedOn: data.trained_on,
+      note: data.note,
+    };
+  } catch (err) {
+    debugLog("POST", url, "-> network error", err);
+    return null;
+  }
 }
 
 export async function fetchDatasetStatus(): Promise<DatasetInfo | null> {
@@ -216,21 +260,29 @@ export async function analyzeImage(
   const formData = new FormData();
   formData.append("file", file);
 
+  const url = `${getApiBaseUrl()}/api/analyze`;
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/analyze`, {
+    debugLog("POST", url, file.name, `${file.size}B`);
+    res = await fetch(url, {
       method: "POST",
       body: formData,
     });
-  } catch {
+  } catch (err) {
+    debugLog("POST", url, "-> network error", err);
     return undefined;
   }
 
   if (res.status === 422) {
     const body = (await res.json()) as { detail: AnalyzeApiError };
+    debugLog("POST", url, "-> 422", body.detail);
     return body.detail;
   }
-  if (!res.ok) return undefined;
+  if (!res.ok) {
+    debugLog("POST", url, "->", res.status);
+    return undefined;
+  }
+  debugLog("POST", url, "-> 200");
 
   const data = (await res.json()) as ApiAnalyzeResponse;
   return {

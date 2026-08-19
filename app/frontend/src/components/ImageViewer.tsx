@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePreferences } from "../hooks/usePreferences";
+import { enhanceImage } from "../lib/imageEnhance";
 
 type ViewMode = "original" | "heatmap" | "overlay";
 
@@ -23,17 +25,40 @@ export default function ImageViewer({
   heatmapUrl,
   altText,
 }: ImageViewerProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("original");
-  const [overlayOpacity, setOverlayOpacity] = useState(0.5);
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const { preferences, setPreference } = usePreferences();
+  const heatmapAvailable = Boolean(heatmapUrl);
+
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    preferences.defaultViewMode,
+  );
+  const [overlayOpacity, setOverlayOpacity] = useState(
+    preferences.defaultHeatmapOpacity,
+  );
+  const [scale, setScale] = useState(
+    preferences.rememberZoom ? preferences.lastZoomScale : MIN_SCALE,
+  );
+  const [offset, setOffset] = useState(
+    preferences.rememberZoom
+      ? { x: preferences.lastZoomOffsetX, y: preferences.lastZoomOffsetY }
+      : { x: 0, y: 0 },
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
+  const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const panStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
-  const heatmapAvailable = Boolean(heatmapUrl);
+  const persistZoom = useCallback(
+    (s: number, o: { x: number; y: number }) => {
+      if (!preferences.rememberZoom) return;
+      setPreference("lastZoomScale", s);
+      setPreference("lastZoomOffsetX", o.x);
+      setPreference("lastZoomOffsetY", o.y);
+    },
+    [preferences.rememberZoom, setPreference],
+  );
 
   const clampOffset = useCallback(
     (next: { x: number; y: number }, s: number) => {
@@ -47,23 +72,33 @@ export default function ImageViewer({
     [],
   );
 
-  const zoomIn = () => setScale((s) => Math.min(MAX_SCALE, s + ZOOM_STEP));
+  const zoomIn = () =>
+    setScale((s) => {
+      const next = Math.min(MAX_SCALE, s + ZOOM_STEP);
+      persistZoom(next, offset);
+      return next;
+    });
   const zoomOut = () =>
     setScale((s) => {
       const next = Math.max(MIN_SCALE, s - ZOOM_STEP);
-      if (next === 1) setOffset({ x: 0, y: 0 });
+      const nextOffset = next === 1 ? { x: 0, y: 0 } : offset;
+      if (next === 1) setOffset(nextOffset);
+      persistZoom(next, nextOffset);
       return next;
     });
   const reset = () => {
     setScale(1);
     setOffset({ x: 0, y: 0 });
+    persistZoom(1, { x: 0, y: 0 });
   };
 
   const onWheel: React.WheelEventHandler = (e) => {
     e.preventDefault();
     setScale((s) => {
       const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s - e.deltaY * 0.0015));
-      if (next === 1) setOffset({ x: 0, y: 0 });
+      const nextOffset = next === 1 ? { x: 0, y: 0 } : offset;
+      if (next === 1) setOffset(nextOffset);
+      persistZoom(next, nextOffset);
       return next;
     });
   };
@@ -81,6 +116,7 @@ export default function ImageViewer({
     setOffset(clampOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy }, scale));
   };
   const onPointerUp: React.PointerEventHandler = () => {
+    if (isPanning) persistZoom(scale, offset);
     setIsPanning(false);
     panStart.current = null;
   };
@@ -100,11 +136,48 @@ export default function ImageViewer({
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
+  // "100%" default zoom = 1 image pixel per screen pixel, computed from the
+  // real natural size vs. the object-contain-fitted rendered size — not
+  // just an arbitrary fixed multiplier.
+  const onBaseImageLoad = () => {
+    if (preferences.rememberZoom) return; // remembered value already wins
+    if (preferences.defaultZoom !== "100") return;
+    const img = imgRef.current;
+    if (!img || !img.naturalWidth) return;
+    const renderedWidth = img.getBoundingClientRect().width;
+    if (!renderedWidth) return;
+    const ratio = img.naturalWidth / renderedWidth;
+    setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, ratio)));
+  };
+
   const showHeatmapLayer = viewMode !== "original" && heatmapAvailable;
   // Heatmap/overlay modes must show the cropped preview, not the raw
   // upload — see the prop comment above.
   const baseImageUrl =
     viewMode !== "original" && croppedPreviewUrl ? croppedPreviewUrl : imageUrl;
+
+  // Auto-enhance runs a real contrast stretch on the displayed image only
+  // — it never touches what was sent to the model, so it can't change a
+  // prediction. See lib/imageEnhance.ts.
+  useEffect(() => {
+    if (!preferences.autoEnhance) {
+      setEnhancedUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    void enhanceImage(baseImageUrl).then((url) => {
+      if (cancelled) return;
+      objectUrl = url;
+      setEnhancedUrl(url);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [baseImageUrl, preferences.autoEnhance]);
+
+  const displayedImageUrl = enhancedUrl ?? baseImageUrl;
 
   return (
     <div
@@ -129,9 +202,11 @@ export default function ImageViewer({
           }}
         >
           <img
-            src={baseImageUrl}
+            ref={imgRef}
+            src={displayedImageUrl}
             alt={altText}
             draggable={false}
+            onLoad={onBaseImageLoad}
             className="max-w-full max-h-full object-contain pointer-events-none"
           />
           {showHeatmapLayer && heatmapUrl && (
@@ -151,17 +226,23 @@ export default function ImageViewer({
             No Grad-CAM heatmap is available for this image.
           </div>
         )}
+
+        {preferences.autoEnhance && (
+          <span className="absolute top-2 left-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-chrome-900/80 text-chrome-300">
+            Auto-enhanced (display only)
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3 bg-chrome-900 px-3 py-2.5 border-t border-chrome-700">
         <div className="flex items-center gap-1" role="group" aria-label="Zoom controls">
-          <ViewerButton onClick={zoomOut} label="Zoom out" disabled={scale <= MIN_SCALE}>
+          <ViewerButton onClick={zoomOut} label="Zoom out" disabled={scale <= MIN_SCALE} showLabel={preferences.alwaysShowIconLabels}>
             −
           </ViewerButton>
           <span className="text-xs text-chrome-300 tabular w-12 text-center" aria-live="polite">
             {Math.round(scale * 100)}%
           </span>
-          <ViewerButton onClick={zoomIn} label="Zoom in" disabled={scale >= MAX_SCALE}>
+          <ViewerButton onClick={zoomIn} label="Zoom in" disabled={scale >= MAX_SCALE} showLabel={preferences.alwaysShowIconLabels}>
             +
           </ViewerButton>
           <ViewerButton onClick={reset} label="Reset zoom and pan">
@@ -232,11 +313,13 @@ function ViewerButton({
   onClick,
   label,
   disabled,
+  showLabel,
   children,
 }: {
   onClick: () => void;
   label: string;
   disabled?: boolean;
+  showLabel?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -246,9 +329,10 @@ function ViewerButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="min-w-[1.75rem] h-7 px-2 rounded text-xs font-medium text-chrome-200 bg-chrome-800 hover:bg-chrome-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 transition-colors"
+      className="min-w-[1.75rem] h-7 px-2 rounded text-xs font-medium text-chrome-200 bg-chrome-800 hover:bg-chrome-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 transition-colors inline-flex items-center gap-1"
     >
       {children}
+      {showLabel && <span className="normal-case">{label}</span>}
     </button>
   );
 }

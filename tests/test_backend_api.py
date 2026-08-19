@@ -115,3 +115,16 @@ def test_training_log_is_internally_consistent():
             assert 0.0 <= epoch["train_acc"] <= 1.0
             assert 0.0 <= epoch["val_acc"] <= 1.0
         assert body["best_val_acc"] in {e["val_acc"] for e in body["history"]}
+
+
+def test_model_reload_reflects_disk_state():
+    """Reload must reflect whatever is actually at MODEL_PATH right now —
+    not just re-report the previously cached status."""
+    before = client.get("/api/model/status").json()
+    res = client.post("/api/model/reload")
+    assert res.status_code == 200
+    after = res.json()
+    assert after["available"] == before["available"]
+    # A second reload should be idempotent.
+    res2 = client.post("/api/model/reload")
+    assert res2.json() == after

@@ -78,3 +78,29 @@ export async function deleteAnalysis(id: string): Promise<void> {
 export async function clearAllAnalyses(): Promise<void> {
   await clear(store);
 }
+
+// Deletes only the Grad-CAM heatmap + cropped-preview blobs, keeping
+// records and original images — for reclaiming space without losing
+// history. These regenerate automatically next time that image is
+// re-analyzed with a backend available.
+export async function clearCachedPreviews(): Promise<void> {
+  const allKeys = await keys(store);
+  const cacheKeys = allKeys.filter(
+    (k): k is string =>
+      typeof k === "string" &&
+      (k.startsWith("cropped:") || k.startsWith("heatmap:")),
+  );
+  await Promise.all(cacheKeys.map((k) => del(k, store)));
+}
+
+// Deletes any analysis older than `maxAgeDays`. Called on app load when
+// Settings > History & Storage > "Auto-delete after" isn't "never".
+// Returns the number of analyses removed, so the caller can decide whether
+// to refresh a list it's already rendered.
+export async function sweepExpiredAnalyses(maxAgeDays: number): Promise<number> {
+  const all = await listAnalyses();
+  const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+  const expired = all.filter((r) => r.createdAt < cutoff);
+  await Promise.all(expired.map((r) => deleteAnalysis(r.id)));
+  return expired.length;
+}

@@ -70,6 +70,15 @@ class _ModelHolder:
         self._load()
         return self._model, self._checkpoint
 
+    def reload(self) -> None:
+        """Forces the next `get()` to re-read MODEL_PATH from disk — for
+        picking up a freshly retrained checkpoint without restarting the
+        server. Exposed via POST /api/model/reload."""
+        with self._lock:
+            self._model = None
+            self._checkpoint = None
+            self._loaded = False
+
 
 _holder = _ModelHolder()
 
@@ -122,3 +131,7 @@ def get_loaded_model() -> torch.nn.Module | None:
     layer4's activations/gradients."""
     model, _ = _holder.get()
     return model
+
+
+def reload_model() -> None:
+    _holder.reload()

@@ -23,7 +23,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from ml.explainability import generate_gradcam_png
-from ml.inference import get_loaded_model, predict
+from ml.inference import get_loaded_model, predict, reload_model
 from ml.preprocessing import ImageValidationError, preprocess
 
 from .schemas import (
@@ -87,6 +87,16 @@ def metrics() -> MetricsResponse:
 @app.get("/api/training-log", response_model=TrainingLogResponse)
 def training_log() -> TrainingLogResponse:
     return get_training_log()
+
+
+@app.post("/api/model/reload")
+def model_reload() -> ModelStatusResponse:
+    """Drops the cached checkpoint so the next request re-reads
+    models/dr_classifier.pt from disk — useful after running ml/train.py
+    again without restarting this server. Returns the resulting status,
+    same shape as GET /api/model/status."""
+    reload_model()
+    return get_model_status()
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)

@@ -71,6 +71,12 @@ export interface AnalysisRecord {
   // this analysis (only possible when prediction is non-null). Fetch them
   // via lib/storage's getCroppedPreviewBlob/getHeatmapBlob.
   hasExplainability?: boolean;
+  // True when this upload was intentionally NOT sent for analysis yet
+  // (Settings > AI Analysis > "Automatically analyze after upload" was
+  // off). Distinguishes "not analyzed yet, click Analyze" from "the
+  // backend was unreachable" — both leave prediction: null, but only the
+  // former should offer a manual "Analyze now" action.
+  awaitingManualAnalysis?: boolean;
 }
 
 export interface StoredImageBlob {

@@ -4,6 +4,7 @@ import { checkImageQuality, SUPPORTED_MIME_TYPES } from "../lib/imageQuality";
 import { analyzeImage } from "../lib/api";
 import { saveAnalysis } from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
+import { usePreferences } from "../hooks/usePreferences";
 
 const FORMAT_LABELS = "JPEG, PNG, TIFF, WebP";
 
@@ -14,6 +15,7 @@ export default function UploadZone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const inputId = useId();
+  const { preferences } = usePreferences();
 
   const handleFile = useCallback(
     async (file: File | undefined | null) => {
@@ -41,8 +43,11 @@ export default function UploadZone() {
         // The backend re-validates and preprocesses (crop/resize) — when
         // reachable, its result is authoritative. When it isn't (not
         // running, offline), we fall back to the client-only check above
-        // rather than blocking the upload.
-        const backendResult = await analyzeImage(file);
+        // rather than blocking the upload. Skipped entirely when the user
+        // has turned off automatic analysis (Settings > AI Analysis).
+        const backendResult = preferences.autoAnalyzeOnUpload
+          ? await analyzeImage(file)
+          : undefined;
 
         if (backendResult && "code" in backendResult) {
           setError(backendResult.message);
@@ -72,24 +77,29 @@ export default function UploadZone() {
               }
             : undefined,
           hasExplainability,
+          awaitingManualAnalysis: !preferences.autoAnalyzeOnUpload,
         };
 
-        await saveAnalysis(
-          record,
-          file,
-          hasExplainability
-            ? {
-                croppedPreviewBlob: backendResult!.croppedPreviewBlob!,
-                heatmapBlob: backendResult!.heatmapBlob!,
-              }
-            : undefined,
-        );
-        navigate(`/analysis/${id}`);
+        if (preferences.storeAnalysisResults) {
+          await saveAnalysis(
+            record,
+            preferences.storeUploadedImages ? file : new Blob(),
+            hasExplainability
+              ? {
+                  croppedPreviewBlob: backendResult!.croppedPreviewBlob!,
+                  heatmapBlob: backendResult!.heatmapBlob!,
+                }
+              : undefined,
+          );
+        }
+        navigate(`/analysis/${id}`, {
+          state: preferences.storeAnalysisResults ? undefined : { record, file },
+        });
       } finally {
         setIsProcessing(false);
       }
     },
-    [navigate],
+    [navigate, preferences],
   );
 
   return (
