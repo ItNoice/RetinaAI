@@ -1,9 +1,4 @@
-"""Model, dataset, metrics and training-log status, read from what's on disk.
-
-Nothing here is hardcoded optimism: if there's no checkpoint, no metrics file
-or no training log, the corresponding endpoint says so. The frontend has a
-real "not available yet" state for each, and it's meant to be used.
-"""
+"""Model, dataset, metrics and training-log status, read from what's on disk."""
 
 import json
 import logging
@@ -85,21 +80,15 @@ def model_status() -> ModelStatusResponse:
 
 
 def dataset_status() -> DatasetStatusResponse:
-    # Tied to the model rather than to the dataset directory on purpose: what
-    # the app should report is the data behind the loaded checkpoint, not
-    # whatever happens to be sitting in datasets/.
+    # Keyed off the model, not the datasets/ directory: what matters is the data
+    # behind the loaded checkpoint, not whatever happens to be sitting on disk.
     return DATASET_STATUS if get_model_info().available else _UNAVAILABLE_DATASET_STATUS
 
 
 def metrics_status() -> MetricsResponse:
-    """Evaluation metrics from models/eval_metrics.json, written by ml/evaluate.py.
-
-    A trained-but-unevaluated model reports no metrics. That's the point —
-    there's no way to reach this endpoint's `available: True` branch without
-    someone having actually run an evaluation.
-    """
+    """Evaluation metrics from models/eval_metrics.json, written by ml/evaluate.py."""
     data = _read_json(METRICS_PATH)
-    if data is None:
+    if data is None:  # trained but unevaluated reports nothing, by design
         return MetricsResponse(
             available=False,
             note=(
@@ -149,18 +138,14 @@ def training_log() -> TrainingLogResponse:
 
 
 def _read_json(path: Path) -> dict | None:
-    """Load a JSON artifact, or None if it's missing or unreadable.
-
-    Half-written files are a real possibility here: ml/train.py rewrites
-    train_log.json at the end of a run, and someone will inevitably hit the
-    Research page mid-write. Treating that as "not available yet" is much
-    better than a 500 on a page that's mostly informational.
-    """
+    """Load a JSON artifact, or None if it's missing or unreadable."""
     if not path.exists():
         return None
 
     try:
         return json.loads(path.read_text())
     except (json.JSONDecodeError, OSError):
+        # Half-written file: ml/train.py rewrites train_log.json at the end of a
+        # run and someone will hit the Research page mid-write. Better than a 500.
         logger.exception("Could not read %s; reporting it as unavailable", path)
         return None

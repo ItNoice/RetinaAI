@@ -1,14 +1,5 @@
-// Thin client for the RetinaAI backend.
-//
-// Nothing here throws on network failure. A missing backend is an ordinary
-// state for this app — you can open it with nothing running and still upload,
-// inspect and browse images — so every call returns null instead and lets the
-// caller degrade. Errors that the *user* can act on (a rejected file) are the
-// exception; see analyzeImage.
-//
-// The Api* interfaces below mirror app/backend/schemas.py verbatim, snake_case
-// and all. The mapping to camelCase happens here, at the boundary, so the rest
-// of the app never sees the wire format.
+// Thin client for the RetinaAI backend. Returns null on network failure rather
+// than throwing — a missing backend is an ordinary state for this app.
 import type {
   DRClass,
   EpochRecord,
@@ -22,9 +13,9 @@ import type {
 import type { ModelStatusInfo, DatasetInfo } from "./modelStatus";
 import { readStoredPreferences } from "./preferences";
 
-// Re-read on every call (not cached at module load) so Settings > Advanced
-// > API endpoint override takes effect immediately, without a reload.
 function getApiBaseUrl(): string {
+  // Re-read every call, not cached at module load, so the Settings override
+  // takes effect without a page reload.
   const override = readStoredPreferences().apiBaseUrlOverride;
   if (override) return override;
   return (
@@ -33,15 +24,15 @@ function getApiBaseUrl(): string {
   );
 }
 
-// Off unless Settings > Advanced > Debug logging is on. Worth having: most
-// support questions about this app turn out to be "which URL was it actually
-// calling".
+// Off unless Settings > Advanced > Debug logging is on.
 function debugLog(...args: unknown[]): void {
   if (readStoredPreferences().debugLogging) {
     console.log("[RetinaAI]", ...args);
   }
 }
 
+// The Api* shapes below mirror app/backend/schemas.py verbatim, snake_case and
+// all; the mapping to camelCase happens here so the app never sees wire format.
 interface ApiModelStatus {
   available: boolean;
   name: string;
@@ -91,8 +82,7 @@ export interface AnalyzeApiResult {
   heatmapBlob: Blob | null;
 }
 
-// The heatmap and preview come back inline as base64 rather than as separate
-// endpoints, so a result is one round trip and can't half-arrive.
+// Inline base64 rather than separate endpoints, so a result can't half-arrive.
 export function base64PngToBlob(base64: string): Blob {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   return new Blob([bytes], { type: "image/png" });
@@ -178,9 +168,8 @@ export async function fetchModelStatus(): Promise<ModelStatusInfo | null> {
   return data ? toModelStatus(data) : null;
 }
 
-// POST rather than GET because it has a side effect: the backend drops its
-// cached checkpoint. Returns the status afterwards, so the caller can tell
-// whether a newly trained model actually loaded.
+// POST, not GET: the backend drops its cached checkpoint. The returned status
+// tells the caller whether a newly trained model actually loaded.
 export async function reloadModel(): Promise<ModelStatusInfo | null> {
   const url = `${getApiBaseUrl()}/api/model/reload`;
   try {
@@ -262,12 +251,9 @@ export async function fetchMetrics(): Promise<MetricsInfo | null> {
   };
 }
 
-// Three outcomes, and the caller needs to tell them apart:
-//   AnalyzeApiResult  - analyzed (the prediction inside may still be null)
-//   AnalyzeApiError   - the backend rejected the file; show the message
-//   undefined         - backend unreachable; fall back to client-only checks
-// Collapsing the last two into one would mean telling users their image is
-// broken whenever the server happens to be down.
+// Three outcomes the caller must tell apart: a result, a rejected file (show
+// the message), or undefined for unreachable. Collapsing the last two would
+// tell users their image is broken whenever the server is down.
 export async function analyzeImage(
   file: File,
 ): Promise<AnalyzeApiResult | AnalyzeApiError | undefined> {

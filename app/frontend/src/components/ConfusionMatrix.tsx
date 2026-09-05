@@ -1,8 +1,5 @@
-// Sequential single-hue (the app's blue accent) intensity, normalized per
-// row (i.e. by proportion of that true class — recall-oriented), light to
-// dark. Every cell keeps a visible numeric label so the count is never
-// color-only, and the diagonal (correct predictions) gets a distinct
-// border rather than relying on position alone.
+// Single-hue intensity, normalized per row (so it reads as recall). Every cell
+// keeps its number, and the diagonal gets a border — never colour alone.
 const ACCENT_HUE = 221;
 const ACCENT_SATURATION = 70;
 

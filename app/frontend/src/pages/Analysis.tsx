@@ -56,11 +56,9 @@ export default function Analysis() {
     next: null,
   });
 
-  // Stable indirection so the global "A" shortcut can call whatever the
-  // current handleAnalyzeNow closure is, even though that closure is
-  // defined below the loading/not-found guards (it needs `record`
-  // narrowed to non-null) and this hook has to run unconditionally above
-  // them.
+  // The "A" shortcut needs handleAnalyzeNow, which is defined below the
+  // not-found guards (it needs `record` narrowed) while this hook has to run
+  // above them. A ref bridges the two.
   const analyzeNowRef = useRef<() => void>(() => {});
   useShortcutListener("analyze", () => analyzeNowRef.current());
 
@@ -198,10 +196,8 @@ export default function Analysis() {
         return;
       }
 
-      // Re-uses the field mapping from lib/analyzeFlow.ts, but not
-      // runAnalysis: this updates an existing record in place rather than
-      // creating one, and folding both into a single function would mean a
-      // flag argument that changes what it fundamentally does.
+      // Shares analyzeFlow's field mapping but not runAnalysis — this updates
+      // a record in place, and merging the two would mean a flag argument.
       const updated: AnalysisRecord = {
         ...record,
         ...toBackendFields(result),
@@ -239,9 +235,7 @@ export default function Analysis() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Workspace header: identity on the left, actions on the right, and
-          the workflow strip beneath. One 3-row band instead of the previous
-          title block + banner + button row. */}
+      {/* Identity left, actions right, workflow strip beneath — one band. */}
       <div className="shrink-0 border-b border-clinic-200 bg-surface">
         <div className="flex items-center gap-3 px-4 py-2.5">
           <div className="min-w-0 flex-1">
@@ -308,12 +302,9 @@ export default function Analysis() {
         {analyzing && <IndeterminateBar />}
       </div>
 
-      {/* Two-panel workspace at lg and up: image left, analysis right, each
-          scrolling independently so the image never moves while reading the
-          results. Below lg there isn't room for two panels side by side, so
-          they stack and the whole workspace scrolls as one column — trying to
-          keep both panels in a fixed-height shell at that width squeezes them
-          into each other. */}
+      {/* Two panels at lg+, each scrolling independently so the image doesn't
+          move while reading results. Below lg they stack and scroll as one
+          column — a fixed-height shell squeezes them into each other there. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto panel-scroll lg:flex-row lg:overflow-hidden">
         <div className="flex flex-col bg-canvas p-3 lg:min-h-0 lg:flex-1">
           {imageUrl ? (

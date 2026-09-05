@@ -3,10 +3,8 @@ import { usePreferences } from "../hooks/usePreferences";
 import { useMetrics, useTrainingLog } from "../hooks/useStatus";
 import { formatPercent } from "../lib/format";
 
-// A calm, real-data-only summary for the Overview page — deliberately not a
-// dashboard "stat tile wall". Pulls from the same hooks Research.tsx and
-// Experiments.tsx already use, so it can never show a number those pages
-// disagree with, and reports "not yet run" honestly rather than a zero.
+// Reads the same hooks as Research.tsx and Experiments.tsx, so it can't show a
+// number those pages disagree with. Reports "not yet run" rather than a zero.
 export default function ResearchSummaryCard() {
   const { preferences } = usePreferences();
   const { metrics, loading: metricsLoading } = useMetrics();

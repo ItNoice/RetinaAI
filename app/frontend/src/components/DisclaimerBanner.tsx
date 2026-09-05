@@ -1,14 +1,8 @@
 import { Link } from "react-router-dom";
 import { Callout } from "./ui";
 
-/**
- * The full-text medical-device disclaimer.
- *
- * The app-wide header carries a persistent short form on every page; this is
- * the long form, shown where someone is about to obtain a prediction. Both
- * exist deliberately — the project's stated rule is that the disclaimer is
- * on-surface, not buried in a terms document.
- */
+// The long form, shown where someone is about to get a prediction. The header
+// carries a short form everywhere else — on-surface, not buried in a terms page.
 export default function DisclaimerBanner() {
   return (
     <Callout role="note" tone="warn" title="Research prototype — not a medical device">

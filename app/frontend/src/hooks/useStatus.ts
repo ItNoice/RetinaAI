@@ -1,11 +1,4 @@
 // Read-only views of the backend's status endpoints.
-//
-// All four follow the same shape: start from a pessimistic fallback, fetch
-// once on mount, and keep the fallback if the request comes back null (which
-// lib/api.ts uses to mean "backend unreachable"). `backendReachable` is
-// surfaced separately because the UI says something different for "no model
-// trained yet" than for "can't reach the server" — they look identical in the
-// data otherwise.
 import { useEffect, useState } from "react";
 import {
   fetchDatasetStatus,
@@ -38,15 +31,16 @@ const EMPTY_TRAINING_LOG: TrainingLogInfo = {
   hyperparameters: {},
 };
 
+// `backendReachable` is separate because "no model trained yet" and "can't
+// reach the server" look identical in the data but need different UI.
 interface BackendResource<T> {
   data: T;
   loading: boolean;
   backendReachable: boolean;
 }
 
-// Fetch-once-on-mount. These endpoints describe files on disk that only
-// change when someone reruns training, so there's nothing to poll for; the
-// Model Lab page triggers an explicit refetch after a reload instead.
+// Fetch once on mount — these describe files that only change when someone
+// reruns training, so there's nothing to poll for.
 function useBackendResource<T>(
   fetcher: () => Promise<T | null>,
   fallback: T,
@@ -57,12 +51,12 @@ function useBackendResource<T>(
 
   useEffect(() => {
     void fetcher().then((result) => {
-      setBackendReachable(result !== null);
+      setBackendReachable(result !== null); // null means unreachable, keep the fallback
       if (result) setData(result);
       setLoading(false);
     });
-    // Fetchers are module-level and stable; re-running on identity would
-    // refetch on every render.
+    // Fetchers are module-level and stable — depending on identity would refetch
+    // on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -19,10 +19,8 @@ interface DetailedImages {
   heatmapUrl: string | null;
 }
 
-// Loads full-resolution image/preview/heatmap object URLs for the detailed
-// synchronized view — the table view only ever needs thumbnails
-// (AnalysisThumbnail handles those from their own blob), so this only runs
-// while detailed view is actually showing.
+// Only runs while the detailed view is showing — the table needs thumbnails
+// only, which AnalysisThumbnail loads itself.
 function useDetailedImages(id: string | undefined): DetailedImages | null {
   const [images, setImages] = useState<DetailedImages | null>(null);
 

@@ -38,9 +38,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyAccentColor(preferences.accentColor, resolvedTheme);
   }, [preferences.accentColor, resolvedTheme]);
 
-  // Each of these preferences is implemented as a class on <html> that
-  // index.css keys off. One effect over a table rather than four identical
-  // ones, so adding the next such preference is a single line.
+  // These four are implemented as classes on <html> that index.css keys off.
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("density-compact", preferences.density === "compact");
@@ -54,9 +52,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     preferences.highContrast,
   ]);
 
-  // Runs once per app load, not on every preference change — a sweep is
-  // cheap but there's no reason to re-run it just because e.g. the theme
-  // toggled. "never" (the default) never touches storage at all.
+  // Once per app load, not on every preference change. "never" (the default)
+  // never touches storage at all.
   useEffect(() => {
     if (preferences.autoDeleteAfterDays === "never") return;
     void sweepExpiredAnalyses(preferences.autoDeleteAfterDays);

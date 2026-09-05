@@ -5,18 +5,8 @@ import type { ShortcutEventName } from "../lib/shortcutBus";
 import { enhanceImage } from "../lib/imageEnhance";
 import { Icon, type IconName } from "./ui";
 
-/**
- * View modes, all backed by real artifacts:
- *
- * - `original`  the untouched upload
- * - `analyzed`  the exact 224x224 crop the model received (cropped_preview)
- * - `heatmap`   the Grad-CAM alone
- * - `overlay`   Grad-CAM composited over the analyzed frame at chosen opacity
- *
- * There is deliberately no "segmentation" mode: the backend produces no masks
- * or region boundaries, and a mode that looked like segmentation but rendered
- * class-activation attention would misrepresent what the model outputs.
- */
+// No "segmentation" mode on purpose: the backend produces no masks, and a mode
+// that looked like one while rendering attention would misrepresent the output.
 type ViewMode = "original" | "analyzed" | "heatmap" | "overlay";
 
 export interface ViewerTransform {
@@ -27,24 +17,18 @@ export interface ViewerTransform {
 
 interface ImageViewerProps {
   imageUrl: string;
-  // The exact cropped+resized image the model analyzed. Required for
-  // heatmap/overlay modes — the heatmap's coordinates only line up with
-  // this frame, not the original upload's, since cropping shifts and
-  // rescales the fundus region. Falls back to `imageUrl` when absent.
+  // The frame the model analyzed. Heatmap coordinates line up with this, not
+  // the upload — cropping shifts and rescales the fundus. Falls back to imageUrl.
   croppedPreviewUrl?: string | null;
   heatmapUrl?: string | null;
   altText: string;
-  /** Fills the parent instead of using a fixed stage height. Used by the
-   *  analysis workspace, where the viewer owns the full column. */
+  /** Fills the parent instead of a fixed stage height. */
   fill?: boolean;
   /** Optional caption rendered in the status strip (e.g. the filename). */
   caption?: string;
-  // When provided, zoom/pan/rotation are controlled externally (used by
-  // Compare's synchronized detailed view — two viewers sharing one
-  // transform). Global keyboard shortcuts (F/H/R/+/-) are only wired up in
-  // uncontrolled mode, since two controlled viewers would both react to the
-  // same keypress. Brightness/contrast/view-mode stay per-instance either
-  // way — nothing in the spec asks those to sync.
+  // Externally controlled zoom/pan/rotation, for Compare's two synced viewers.
+  // Shortcuts stay off in this mode — both viewers would react to one keypress.
+  // Brightness/contrast/view-mode remain per-instance either way.
   controlled?: {
     transform: ViewerTransform;
     onChange: (transform: ViewerTransform) => void;
@@ -70,10 +54,8 @@ const MODE_HINTS: Record<ViewMode, string> = {
   overlay: "Grad-CAM composited over the analyzed frame",
 };
 
-// Subscribes to a shortcut, but does nothing while the viewer's transform is
-// externally controlled. The guard lives inside a stable callback rather than
-// at the call site: a fresh no-op arrow each render would resubscribe every
-// listener on every render.
+// The guard lives in a stable callback rather than at the call site — a fresh
+// no-op arrow each render would resubscribe every listener every render.
 function useViewerShortcut(
   name: ShortcutEventName,
   controlled: boolean,
@@ -144,10 +126,8 @@ export default function ImageViewer({
   const clampOffset = useCallback(
     (next: { x: number; y: number }, s: number) => {
       if (s <= 1) return { x: 0, y: 0 };
-      // Deliberately loose rather than computed from the rendered bounds:
-      // the image is object-contain inside a container whose size we don't
-      // track, and an over-tight clamp that fights the user is worse than
-      // letting them drag slightly past the edge.
+      // Loose on purpose — the image is object-contain in a container we don't
+      // measure, and a clamp that fights the user is worse than a little slack.
       const bound = (s - 1) * 200;
       return {
         x: Math.max(-bound, Math.min(bound, next.x)),
@@ -209,10 +189,9 @@ export default function ImageViewer({
     const request = document.fullscreenElement
       ? document.exitFullscreen()
       : containerRef.current.requestFullscreen();
-    // Browsers reject this when the call isn't tied to a user gesture, or
-    // when an iframe/permissions policy forbids it. Nothing to do about it
-    // and nothing to tell the user — but an unhandled rejection in the
-    // console sends the next person debugging down the wrong path.
+    // Rejects without a user gesture or under a restrictive permissions policy.
+    // Nothing to tell the user, but an unhandled rejection misleads whoever
+    // debugs this next.
     void request.catch(() => {});
   }, []);
 
@@ -235,10 +214,8 @@ export default function ImageViewer({
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  // Settings > AI Analysis > "Auto-show Grad-CAM": switch to overlay the
-  // moment a heatmap transitions from unavailable to available (a fresh
-  // analysis just completed) — not on every mount, so reopening an
-  // already-analyzed image still respects "Default view" instead.
+  // Fires on the unavailable -> available transition (a fresh analysis), not on
+  // mount, so reopening an analyzed image still respects "Default view".
   const hadHeatmap = useRef(heatmapAvailable);
   useEffect(() => {
     if (preferences.autoShowGradCam && heatmapAvailable && !hadHeatmap.current) {
@@ -247,9 +224,8 @@ export default function ImageViewer({
     hadHeatmap.current = heatmapAvailable;
   }, [heatmapAvailable, preferences.autoShowGradCam]);
 
-  // "100%" default zoom = 1 image pixel per screen pixel, computed from the
-  // real natural size vs. the object-contain-fitted rendered size — not
-  // just an arbitrary fixed multiplier.
+  // "100%" means one image pixel per screen pixel, computed from natural vs.
+  // rendered size rather than a fixed multiplier.
   const onBaseImageLoad = () => {
     if (preferences.rememberZoom) return; // remembered value already wins
     if (preferences.defaultZoom !== "100") return;
@@ -267,9 +243,7 @@ export default function ImageViewer({
   const baseImageUrl =
     viewMode !== "original" && croppedPreviewUrl ? croppedPreviewUrl : imageUrl;
 
-  // Auto-enhance runs a real contrast stretch on the displayed image only
-  // — it never touches what was sent to the model, so it can't change a
-  // prediction. See lib/imageEnhance.ts.
+  // Display only — never touches what was sent to the model.
   useEffect(() => {
     if (!preferences.autoEnhance) {
       setEnhancedUrl(null);
@@ -298,8 +272,7 @@ export default function ImageViewer({
   const isDerived = viewMode !== "original";
   const isAiGenerated = viewMode === "heatmap" || viewMode === "overlay";
 
-  // Fullscreen drops the border and rounding — the viewer is the whole
-  // screen, so a rounded card edge floating against black looks like a bug.
+  // Fullscreen drops the card edge, which floating against black looks like a bug.
   let shellClass = "rounded-lg border border-chrome-700";
   if (isFullscreen) {
     shellClass = "h-screen";
@@ -352,8 +325,7 @@ export default function ImageViewer({
           )}
         </div>
 
-        {/* What am I looking at? A persistent, unmissable label whenever the
-            frame is anything other than the untouched upload. */}
+        {/* Persistent label whenever this isn't the untouched upload. */}
         {isDerived && (
           <div
             className="absolute top-3 left-3 flex items-center gap-1.5 rounded bg-chrome-950/85 px-2 py-1 text-[11px] font-medium text-chrome-200 backdrop-blur-sm"
@@ -455,8 +427,7 @@ export default function ImageViewer({
 
         <div className="h-5 w-px bg-chrome-700" aria-hidden="true" />
 
-        {/* View modes. Only the modes with real artifacts behind them are
-            offered — no disabled ghosts for things this image never had. */}
+        {/* Only modes with real artifacts behind them — no disabled ghosts. */}
         <div
           role="group"
           aria-label="Image view mode"
@@ -488,8 +459,7 @@ export default function ImageViewer({
 
         <div className="flex-1 min-w-0" />
 
-        {/* Only in fullscreen, where the workspace header that normally
-            carries the filename is hidden. */}
+        {/* Fullscreen only — the header that carries the filename is hidden there. */}
         {caption && isFullscreen && (
           <span className="hidden sm:block truncate max-w-[20rem] text-[11px] text-chrome-300/70" title={caption}>
             {caption}

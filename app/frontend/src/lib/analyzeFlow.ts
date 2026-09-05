@@ -1,14 +1,6 @@
-// The shared "turn an image into a stored analysis" path.
-//
-// Extracted because UploadZone and Analysis had grown near-identical copies
-// of it, and the copies were the kind that drift: a field added to one and
-// forgotten in the other shows up later as a record that renders differently
-// depending on which screen created it.
-//
-// A plain function rather than a hook, deliberately: vitest runs in the node
-// environment in this project (no jsdom, no testing-library), so a hook would
-// be untestable while this is not. Navigation and UI state stay in the
-// components.
+// The shared "image -> stored analysis" path, extracted from the near-identical
+// copies UploadZone and Analysis had grown. A function rather than a hook, so
+// it's testable under vitest's node environment.
 import { analyzeImage, type AnalyzeApiResult } from "./api";
 import { checkImageQuality } from "./imageQuality";
 import { saveAnalysis, type ExplainabilityBlobs } from "./storage";
@@ -17,12 +9,7 @@ import type { Preferences } from "./preferences";
 
 const FORMAT_LABELS = "JPEG, PNG, TIFF, WebP";
 
-/**
- * Turn a blocking client-side quality issue into a user-facing message.
- *
- * `too-small` is intentionally absent: it's a soft flag that the backend also
- * reports, and it warns rather than blocks.
- */
+/** A blocking quality issue as a user-facing message, or null. */
 export function describeQualityIssue(check: QualityCheck): string | null {
   if (check.issues.includes("not-an-image")) {
     return `Unsupported file type. Please upload one of: ${FORMAT_LABELS}.`;
@@ -33,7 +20,7 @@ export function describeQualityIssue(check: QualityCheck): string | null {
   if (check.issues.includes("corrupted")) {
     return "This file could not be read as an image. It may be corrupted.";
   }
-  return null;
+  return null; // "too-small" is deliberately absent — it warns, it doesn't block
 }
 
 /** The parts of a record that come from a backend analysis. */
@@ -54,14 +41,8 @@ export function toBackendFields(
   };
 }
 
-/**
- * The explainability blobs, but only as a pair.
- *
- * The viewer overlays the heatmap onto the cropped preview, so one without
- * the other can't be displayed and shouldn't be stored. Both call sites that
- * persist a backend result go through this rather than asserting each blob
- * non-null separately.
- */
+// Both blobs or neither: the viewer overlays one onto the other, so a lone
+// blob can't be displayed. Both persisting call sites go through here.
 export function toExplainabilityBlobs(
   result: AnalyzeApiResult,
 ): ExplainabilityBlobs | undefined {
@@ -77,20 +58,13 @@ export interface RunAnalysisSuccess {
   id: string;
   record: AnalysisRecord;
   file: File;
-  /** False when preferences say not to persist — the caller must pass the
-   *  record through router state instead. */
+  /** False when storage is off; the caller passes the record via router state. */
   stored: boolean;
 }
 
 export type RunAnalysisResult = RunAnalysisSuccess | { kind: "error"; message: string };
 
-/**
- * Validate, analyze (if enabled), and persist a new image.
- *
- * The backend re-validates and preprocesses — when reachable, its result is
- * authoritative. When it isn't, we fall back to the client-only check rather
- * than blocking, so the app stays usable with no backend.
- */
+/** Validate, analyze (if enabled), and persist a new image. */
 export async function runAnalysis(
   file: File,
   preferences: Preferences,
@@ -108,6 +82,8 @@ export async function runAnalysis(
     return { kind: "error", message: backendResult.message };
   }
 
+  // The backend's result is authoritative when it answered; otherwise fall back
+  // to the client-only check rather than blocking.
   const fields = backendResult ? toBackendFields(backendResult) : null;
 
   const explainability = backendResult ? toExplainabilityBlobs(backendResult) : undefined;

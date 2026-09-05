@@ -1,13 +1,4 @@
-"""Grad-CAM heatmaps for the retinal classifier.
-
-Grad-CAM (Selvaraju et al., 2017) over layer4 of the ResNet-18 backbone —
-the last conv block, which is the usual choice: deep enough to carry class
-information, still spatial enough to localize.
-
-Worth being blunt about what this is: a map of where the model looked, not a
-map of where disease is. The two often coincide and sometimes badly don't.
-The frontend shows it with that caveat attached.
-"""
+"""Grad-CAM heatmaps (Selvaraju et al., 2017) for the retinal classifier."""
 
 from __future__ import annotations
 
@@ -26,30 +17,26 @@ def generate_gradcam_png(
 ) -> bytes:
     """Heatmap for `target_class_idx` as PNG bytes, same H×W as the input.
 
-    `normalized_image` must be the (3, H, W) array the model actually saw —
-    ml.preprocessing.preprocess's `.normalized`. Feeding it the raw upload
-    produces a heatmap for a frame the model never scored.
-
-    The heatmap is returned on its own, with no source image blended in:
-    the frontend composites it over the preview itself so the overlay opacity
-    stays adjustable client-side.
+    A map of where the model looked, not where disease is. The two often
+    coincide and sometimes badly don't.
     """
+    # layer4: deep enough to carry class information, still spatial enough to localize.
     target_layers = [model.layer4[-1]]
 
+    # Must be the array the model actually scored (preprocess's `.normalized`),
+    # not the raw upload — otherwise the heatmap describes a frame it never saw.
     input_tensor = torch.from_numpy(normalized_image).unsqueeze(0)
     with GradCAM(model=model, target_layers=target_layers) as cam:
-        # cam() returns one map per batch item; we only ever pass one image.
         grayscale_cam = cam(
             input_tensor=input_tensor,
             targets=[ClassifierOutputTarget(target_class_idx)],
-        )[0]  # (H, W), float32 in [0, 1]
+        )[0]  # one map per batch item, and we pass one image; (H, W) float32 in [0, 1]
 
-    # JET is the convention readers expect from published Grad-CAM figures.
-    # OpenCV hands back BGR, so convert before Pillow sees it or the heatmap
-    # comes out with its red and blue ends swapped.
     heatmap_bgr = cv2.applyColorMap(np.uint8(255 * grayscale_cam), cv2.COLORMAP_JET)
-    heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
+    heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)  # OpenCV is BGR; Pillow would swap red and blue
 
+    # Returned bare, with no source image blended in, so the frontend can
+    # composite it at an adjustable opacity.
     buffer = BytesIO()
     Image.fromarray(heatmap_rgb).save(buffer, format="PNG")
     return buffer.getvalue()

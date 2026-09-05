@@ -5,9 +5,7 @@ interface AccentPalette {
   dark: { 700: string; 600: string; 500: string; 400: string; soft: string; softInk: string };
 }
 
-// Four professional, WCAG-reasonable options — each with its own light and
-// dark variant, since a color that reads well on white doesn't necessarily
-// read well on near-black.
+// Separate light/dark variants: a color that reads on white may not on near-black.
 export const ACCENT_PALETTES: Record<AccentColor, AccentPalette> = {
   blue: {
     light: { 700: "#1d4ed8", 600: "#2563eb", 500: "#3b82f6", 400: "#60a5fa", soft: "#dbeafe", softInk: "#1d4ed8" },

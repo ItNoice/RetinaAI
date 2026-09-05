@@ -8,20 +8,12 @@ interface NavItem {
   to: string;
   label: string;
   icon: IconName;
-  /** Shown as a tooltip and read by assistive tech — the labels alone are
-   *  terse, and several of these pages aren't self-explanatory. */
+  /** Tooltip and assistive text — the labels alone are terse. */
   hint?: string;
 }
 
-/**
- * Navigation is deliberately shallow: three destinations that are part of
- * reading an image, and everything else folded away.
- *
- * The app has fourteen routes. Listing all of them flat, as it did, made the
- * workspace look like one item in a documentation site. Nothing has been
- * removed — Research and Reference are still one click away, they just no
- * longer compete with the thing the app is for.
- */
+// Shallow on purpose. Fourteen routes listed flat made the workspace look like
+// one item in a docs site; Research and Reference are still one click away.
 const WORKSPACE_ITEMS: NavItem[] = [
   { to: "/", label: "Overview", icon: "overview", hint: "Workflow and recent activity" },
   { to: "/analyze", label: "Analyze", icon: "scan", hint: "Load a fundus image and run the model" },
@@ -63,7 +55,7 @@ function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate: () => vo
     >
       {({ isActive }) => (
         <>
-          {/* A shape cue as well as a colour cue for the active row. */}
+          {/* Shape cue as well as colour for the active row. */}
           <span
             aria-hidden="true"
             className={`absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full transition-colors ${

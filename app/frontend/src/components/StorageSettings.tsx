@@ -10,11 +10,9 @@ export default function StorageSettings() {
   const { preferences, setPreference, resetPreferences } = usePreferences();
   const toast = useToast();
 
-  // Every button here destroys data, so each one confirms first and reports
-  // what happened. IndexedDB writes do fail in the wild — a full quota, a
-  // private window, a browser that's blocked storage for the origin — and a
-  // silent failure on a privacy control is the worst kind: the user believes
-  // their images are gone when they aren't.
+  // Every button here destroys data, so each confirms and reports. IndexedDB
+  // does fail in the wild, and a silent failure on a privacy control leaves the
+  // user believing their images are gone when they aren't.
   const runAction = async (
     label: string,
     action: () => Promise<void | number>,
@@ -74,9 +72,8 @@ export default function StorageSettings() {
         >
           Clear cached images (heatmaps &amp; previews)
         </button>
-        {/* Unlike "Clear analysis history" above, this also drops saved
-            preferences — otherwise the two buttons did exactly the same
-            thing while promising different amounts. */}
+        {/* Also drops preferences — otherwise this and "Clear analysis
+            history" did the same thing while promising different amounts. */}
         <button
           type="button"
           onClick={() =>

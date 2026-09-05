@@ -1,9 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
-// Static route-segment → label map. Dynamic segments (currently only
-// analysis/:id) get a fixed human label rather than the raw id — nothing
-// here needs to be a real title, just orient the reader in the section
-// they're in, per the spec's "Research / Experiments / ..." pattern.
+// Dynamic segments (just analysis/:id) get a fixed label rather than the raw
+// id — this only needs to orient the reader, not title the page.
 const SEGMENT_LABELS: Record<string, string> = {
   analyze: "Analyze",
   history: "History",

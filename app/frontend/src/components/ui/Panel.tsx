@@ -1,19 +1,11 @@
 import type { ReactNode } from "react";
 
-/**
- * The workstation's one surface primitive.
- *
- * Before this existed the same card string was copy-pasted 26 times in four
- * slightly different variants, which is why padding and borders drifted. Every
- * panel in the app now comes from here.
- *
- * Padding stays on the `p-5` / `p-4` / `p-3` utilities on purpose: the
- * compact-density rules in index.css key off those literal class names, so
- * inventing a new spacing scale here would silently break Settings →
- * Appearance → Interface density.
- */
+// The one surface primitive — the card string was copy-pasted 26 times before
+// this, in four variants that had drifted apart.
 export type PanelPadding = "none" | "sm" | "md" | "lg";
 
+// Literal p-5/p-4/p-3, because index.css's compact-density rules key off those
+// exact class names. A custom scale here would silently break Interface density.
 const PADDING: Record<PanelPadding, string> = {
   none: "",
   sm: "p-3",
@@ -33,8 +25,7 @@ export function Panel({
   padding?: PanelPadding;
   className?: string;
   as?: "div" | "section" | "aside" | "article";
-  /** Lifts the panel off the canvas with a shallow shadow. Use sparingly —
-   *  flat panels separated by hairlines read as more clinical. */
+  /** Use sparingly — flat panels separated by hairlines read as more clinical. */
   raised?: boolean;
 } & React.HTMLAttributes<HTMLElement>) {
   return (
@@ -49,13 +40,8 @@ export function Panel({
   );
 }
 
-/**
- * Panel header with an optional right-hand slot for controls.
- *
- * `eyebrow` is the small uppercase label used above a value; `title` is the
- * panel's own heading. Keeping both here is what stops section headings from
- * drifting between `mb-1`, `mb-3` and `mb-4` as they had.
- */
+// Header plus an optional right-hand slot. Both live here so section headings
+// stop drifting between mb-1, mb-3 and mb-4 as they had.
 export function PanelHeader({
   title,
   eyebrow,

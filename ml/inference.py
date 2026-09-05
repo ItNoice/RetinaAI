@@ -1,9 +1,7 @@
 """Load the trained classifier and run single-image inference.
 
-Everything here is built around one rule: when there is no checkpoint, or the
-one on disk won't load, this module returns None. It never falls back to an
-untrained model, and it never returns a default class — "No DR" from a model
-that doesn't exist is the single most dangerous thing this app could say.
+Returns None when no checkpoint is loaded — never a default class. "No DR"
+from a model that doesn't exist is the worst thing this app could say.
 """
 
 from __future__ import annotations
@@ -45,33 +43,25 @@ class Prediction:
 
 
 class _ModelHolder:
-    """Loads the checkpoint once and keeps it resident.
-
-    Reloading ~45 MB of weights per request would dominate the latency of a
-    CPU inference that itself takes a few hundred milliseconds. The lock is
-    for uvicorn's threadpool: without it, two concurrent first requests both
-    load the model.
-    """
+    """Loads the checkpoint once and keeps it resident."""
 
     def __init__(self):
+        # Guards against two concurrent first requests both loading the model.
         self._lock = Lock()
         self._model: torch.nn.Module | None = None
         self._checkpoint: dict | None = None
         self._loaded = False
 
     def _load(self) -> None:
-        # Fast path, unlocked: after the first load this is every request.
-        if self._loaded:
+        if self._loaded:  # fast path, unlocked — this is every request after the first
             return
 
         with self._lock:
-            # Re-check under the lock — another thread may have loaded it
-            # while we were waiting.
-            if self._loaded:
+            if self._loaded:  # another thread got here while we waited
                 return
 
-            # Marked loaded either way. A missing or broken checkpoint is a
-            # steady state, not something to retry on every request.
+            # Set even on failure: a missing checkpoint is a steady state, not
+            # something to retry on every request.
             self._loaded = True
 
             if not MODEL_PATH.exists():
@@ -86,9 +76,8 @@ class _ModelHolder:
                 model.load_state_dict(checkpoint["model_state_dict"])
                 model.eval()
             except (OSError, RuntimeError, KeyError):
-                # Truncated file from an interrupted train run, or a
-                # checkpoint from an incompatible architecture. Degrade to
-                # "no model" instead of 500-ing every analyze request.
+                # Truncated file from an interrupted run, or a checkpoint from
+                # another architecture. Degrade instead of 500-ing every request.
                 logger.exception("Checkpoint at %s could not be loaded", MODEL_PATH)
                 return
 
@@ -101,11 +90,7 @@ class _ModelHolder:
         return self._model, self._checkpoint
 
     def reload(self) -> None:
-        """Drop the cached model so the next get() re-reads from disk.
-
-        Lets a freshly trained checkpoint go live without restarting the
-        server. Exposed as POST /api/model/reload.
-        """
+        """Drop the cached model so a retrained checkpoint goes live without a restart."""
         with self._lock:
             self._model = None
             self._checkpoint = None
@@ -120,8 +105,7 @@ def get_model_info() -> ModelInfo:
     if model is None or checkpoint is None:
         return ModelInfo(available=False, architecture=None, version=None, trained_on=None)
 
-    # Version string doubles as provenance in the UI, so it carries the
-    # epoch and val accuracy rather than an opaque number.
+    # Doubles as provenance in the UI, hence the epoch and accuracy.
     version = (
         f"{checkpoint['architecture']}-epoch{checkpoint['epoch']}"
         f"-valacc{checkpoint['best_val_acc']:.3f}"
@@ -135,19 +119,14 @@ def get_model_info() -> ModelInfo:
 
 
 def predict(normalized_image: np.ndarray) -> Prediction | None:
-    """Score one preprocessed image, or return None if no model is loaded.
-
-    `normalized_image` is ml.preprocessing.preprocess's `.normalized` —
-    (3, H, W) and ImageNet-normalized.
-    """
+    """Score one preprocessed image (preprocess's `.normalized`), or None if no model."""
     model, checkpoint = _holder.get()
     if model is None or checkpoint is None:
         return None
 
     start = time.perf_counter()
     with torch.no_grad():
-        # unsqueeze to a batch of one; the model has no single-image path.
-        tensor = torch.from_numpy(normalized_image).unsqueeze(0)
+        tensor = torch.from_numpy(normalized_image).unsqueeze(0)  # batch of one
         probs = F.softmax(model(tensor), dim=1).squeeze(0).numpy()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
@@ -165,11 +144,7 @@ def predict(normalized_image: np.ndarray) -> Prediction | None:
 
 
 def get_loaded_model() -> torch.nn.Module | None:
-    """The cached nn.Module itself, for Grad-CAM.
-
-    ml.explainability hooks layer4's activations and gradients, so unlike
-    predict() it needs the module rather than its output.
-    """
+    """The nn.Module itself — Grad-CAM hooks layer4, so it needs more than predictions."""
     model, _ = _holder.get()
     return model
 

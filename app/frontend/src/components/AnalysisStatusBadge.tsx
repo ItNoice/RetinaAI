@@ -1,15 +1,9 @@
 import { Badge } from "./ui";
 import type { AnalysisRecord } from "../lib/types";
 
-/**
- * The three states an analysis can be in, defined once.
- *
- * This logic was previously written out three times (History's table, the
- * Recent grid, and the model card) in three different badge shapes. The order
- * of the checks matters: a quality problem is reported ahead of a prediction,
- * because a grade computed from a flagged image is the thing most worth
- * qualifying.
- */
+// The three states an analysis can be in, previously written out three times.
+// Check order matters: a quality problem is reported ahead of a prediction,
+// since a grade from a flagged image is what most needs qualifying.
 export default function AnalysisStatusBadge({
   record,
   className = "",

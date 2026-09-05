@@ -1,8 +1,6 @@
-// A tiny pub/sub over window CustomEvents for keyboard-shortcut actions that
-// only make sense in the context of whatever's currently mounted (e.g. "H"
-// toggles the heatmap only when an ImageViewer is actually on screen).
-// hooks/useKeyboardShortcuts.ts dispatches; individual components (mainly
-// ImageViewer.tsx, Analysis.tsx, History.tsx) subscribe only while mounted.
+// Pub/sub over CustomEvents for shortcuts that only mean something while a
+// particular component is mounted ("H" needs an ImageViewer on screen).
+// useKeyboardShortcuts dispatches; components subscribe while mounted.
 export type ShortcutEventName =
   | "analyze"
   | "fullscreen"

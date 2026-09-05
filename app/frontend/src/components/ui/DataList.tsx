@@ -1,20 +1,12 @@
 import type { ReactNode } from "react";
 
-/**
- * Key/value readout.
- *
- * Three different definition-list shapes existed across the app. This is one
- * component with two layouts: `rows` (label left, value right — for narrow
- * panels) and `grid` (two columns — for wider metadata blocks).
- *
- * Values are tabular by default because almost all of them are numbers that
- * benefit from aligning, and misaligned digits in a clinical readout look
- * careless.
- */
+// Key/value readout, replacing three different definition-list shapes. Two
+// layouts: `rows` for narrow panels, `grid` for wider metadata blocks.
 export interface DataRow {
   label: ReactNode;
   value: ReactNode;
-  /** Turns off tabular figures for prose values like a model name. */
+  /** Off by default: most values are numbers, and misaligned digits in a
+   *  clinical readout look careless. Set this for prose like a model name. */
   prose?: boolean;
   title?: string;
 }

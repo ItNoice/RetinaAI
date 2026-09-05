@@ -1,10 +1,6 @@
 // Derives the workflow strip's five stages from what actually happened to an
-// image. Kept pure and separate from the components so it can be unit tested
-// in the node environment, like the rest of lib/.
-//
-// Every stage state here is read from real data. There is no timer, no
-// simulated progress, and no stage that reports success without something in
-// the record to back it up.
+// image. No timers and no simulated progress — every state is read from the
+// record. Pure, so it's unit-testable in node like the rest of lib/.
 import type { Stage, StageState } from "../components/WorkflowStages";
 import type { AnalysisRecord } from "./types";
 import { formatMs } from "./format";

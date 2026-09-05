@@ -7,10 +7,8 @@ import {
 } from "../lib/export";
 import { formatMs, formatPercent } from "../lib/format";
 
-// Rendered off-screen at all times (`hidden print:block` — never visible on
-// screen) and shown only by index.css's #print-report print stylesheet,
-// which hides everything else on the page. window.print() on this becomes
-// a real, savable-as-PDF report with no PDF-generation dependency.
+// Always mounted but `hidden print:block`; index.css's print stylesheet hides
+// everything else. window.print() gives a savable PDF with no PDF dependency.
 export default function AnalysisReport({
   record,
   imageUrl,
@@ -88,9 +86,8 @@ export default function AnalysisReport({
         {record.backend && ` · cropped to ${record.backend.croppedWidth} × ${record.backend.croppedHeight}px for analysis`}
       </p>
 
-      {/* Same wording as the JSON export's disclaimer — a printed page that
-          says something subtly different from the file is how a caveat gets
-          quoted out of context later. */}
+      {/* Same wording as the JSON export — a page that says something subtly
+          different from the file is how a caveat gets quoted out of context. */}
       <p className="text-[10px] text-gray-500 mt-6 pt-3 border-t border-gray-300 leading-relaxed">
         {DISCLAIMER} {HEATMAP_DISCLAIMER}
       </p>

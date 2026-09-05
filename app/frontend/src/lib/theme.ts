@@ -1,6 +1,5 @@
-// Theme preference storage + application. Kept separate from React so the
-// same logic can run in index.html's pre-paint script (avoiding a flash of
-// the wrong theme) and inside the app via ThemeContext.
+// Kept out of React so index.html's pre-paint script can run it too, which is
+// what stops a flash of the wrong theme on load.
 export type ThemePreference = "system" | "light" | "dark";
 
 export const THEME_STORAGE_KEY = "retinaai-theme";
@@ -29,10 +28,8 @@ export function writeStoredTheme(theme: ThemePreference): void {
   }
 }
 
-// Applies `theme` to the document by setting/removing data-theme, which
-// index.css's [data-theme="dark"]/[data-theme="light"] blocks read.
-// "system" removes the attribute entirely, so the prefers-color-scheme
-// media query in index.css takes over.
+// Sets data-theme, which index.css keys off. "system" removes it entirely so
+// the prefers-color-scheme media query takes over.
 export function applyTheme(theme: ThemePreference): void {
   const root = document.documentElement;
   if (theme === "system") {

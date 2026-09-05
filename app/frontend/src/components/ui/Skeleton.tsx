@@ -1,10 +1,5 @@
-/**
- * Loading placeholders.
- *
- * The brief asks for skeletons over spinners: a skeleton shows the shape of
- * what's arriving, which reads as less anxious than an indeterminate spinner
- * next to a medical image.
- */
+// Skeletons over spinners: showing the shape of what's arriving reads as less
+// anxious next to a medical image.
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
@@ -14,8 +9,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
   );
 }
 
-/** A determinate-looking bar for work whose duration we genuinely can't
- *  predict. Labelled by the caller, never on its own. */
+/** For work whose duration we can't predict. Labelled by the caller. */
 export function IndeterminateBar({ className = "" }: { className?: string }) {
   return (
     <div

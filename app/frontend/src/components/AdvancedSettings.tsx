@@ -5,10 +5,8 @@ import { reloadModel } from "../lib/api";
 import { getCacheInfo } from "../lib/storage";
 import SettingsToggle from "./SettingsToggle";
 
-// Real, fixed facts about this specific pipeline — not user-configurable,
-// because changing any of them would require a different trained model.
-// Shown read-only rather than as selectors so nothing here implies a
-// capability (GPU inference, quantization, batching) that doesn't exist.
+// Read-only, not selectors: changing any of these needs a different trained
+// model, and a dropdown would imply a capability that doesn't exist.
 const FIXED_INFERENCE_FACTS = [
   { label: "Inference device", value: "CPU only — no GPU available in this environment" },
   { label: "Precision", value: "FP32 (default PyTorch CPU precision)" },
@@ -40,8 +38,7 @@ export default function AdvancedSettings() {
       } else if (status.available) {
         setReloadResult(`Reloaded — ${status.version}`);
       } else {
-        // The backend answered, so the reload itself worked — there just
-        // isn't a checkpoint at models/dr_classifier.pt to pick up.
+        // The reload worked; there's just no checkpoint on disk to pick up.
         setReloadResult("Reloaded — no checkpoint found on disk");
       }
     } finally {

@@ -1,9 +1,6 @@
-// A real (if simple) auto-contrast enhancement, computed client-side with
-// <canvas> — a linear per-channel histogram stretch using the 1st/99th
-// percentile as black/white points (robust to a few outlier pixels, unlike
-// using the literal min/max). This only ever changes what's *displayed* in
-// the viewer; it runs on a copy of the image and never touches the bytes
-// sent to the backend for analysis, so it cannot influence a prediction.
+// Auto-contrast for the viewer: a per-channel histogram stretch on a <canvas>
+// copy. Display only — the bytes sent to the backend are untouched, so this
+// cannot influence a prediction.
 export async function enhanceImage(sourceUrl: string): Promise<string | null> {
   const img = await loadImage(sourceUrl);
   if (!img) return null;
@@ -19,6 +16,8 @@ export async function enhanceImage(sourceUrl: string): Promise<string | null> {
   const { data } = imageData;
 
   for (let channel = 0; channel < 3; channel++) {
+    // 1st/99th percentile as the black/white points — robust to outlier pixels
+    // in a way the literal min/max isn't.
     const [lo, hi] = percentileRange(data, channel, 0.01);
     if (hi <= lo) continue;
     const scale = 255 / (hi - lo);

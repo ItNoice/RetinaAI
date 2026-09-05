@@ -20,16 +20,8 @@ interface Staged {
   check: QualityCheck;
 }
 
-/**
- * Load an image and get it analyzed.
- *
- * The image is staged first — preview, real dimensions and the client-side
- * validation result — rather than vanishing into a navigation the instant a
- * file is chosen. When "analyze on upload" is on (the default) the staged
- * card is still what's on screen while the request runs, so going from
- * picking a file to seeing a result is one continuous view rather than a
- * blank page.
- */
+// Staged first — preview, dimensions, validation — rather than navigating away
+// the instant a file is picked, so upload to result is one continuous view.
 export default function UploadZone() {
   const [isDragging, setIsDragging] = useState(false);
   const [staged, setStaged] = useState<Staged | null>(null);
@@ -41,7 +33,7 @@ export default function UploadZone() {
   const { preferences } = usePreferences();
   const { status, backendReachable } = useModelStatus();
 
-  // Object URLs are per-staged-file; revoke as soon as one is replaced.
+  // Revoke as soon as a staged file is replaced.
   useEffect(() => {
     if (!staged) return;
     return () => URL.revokeObjectURL(staged.previewUrl);
@@ -99,9 +91,7 @@ export default function UploadZone() {
 
   const busy = phase !== "idle";
 
-  // The pre-analysis view of the same strip Analysis.tsx shows afterwards.
-  // It can't use lib/workflow's deriveStages: there's no AnalysisRecord yet,
-  // only a staged file, so the last three stages are all forward-looking.
+  // Can't use deriveStages: there's no record yet, only a staged file.
   const stages: Stage[] = [
     {
       id: "image",

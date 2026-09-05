@@ -1,15 +1,12 @@
-// Everything the app remembers lives in this browser's IndexedDB. Retinal
-// images are medical data; the only place any of it is ever sent is the
-// backend the user is running themselves, for the analysis they asked for.
-//
-// One analysis spans up to four keys sharing an id: the JSON record, the
-// original image, and — when a model actually ran — the cropped preview and
-// Grad-CAM heatmap. Prefixed string keys rather than four object stores,
-// because idb-keyval gives us one store and that's enough here.
+// Everything the app remembers lives in this browser's IndexedDB. Retinal images
+// are medical data; the only place any of it goes is the user's own backend.
 import { createStore, get, set, del, keys, clear } from "idb-keyval";
 import type { AnalysisRecord } from "./types";
 
 const store = createStore("retinaai-db", "analyses");
+
+// One analysis spans up to four keys sharing an id. Prefixed keys rather than
+// separate stores — idb-keyval gives us one, and that's enough.
 
 const recordKey = (id: string) => `record:${id}`;
 const imageKey = (id: string) => `image:${id}`;
@@ -63,8 +60,7 @@ export async function getHeatmapBlob(id: string): Promise<Blob | undefined> {
   return get(heatmapKey(id), store);
 }
 
-// Newest first — every list view in the app wants that order, so it's done
-// here once rather than at each call site.
+// Newest first, since every list view wants that order.
 export async function listAnalyses(): Promise<AnalysisRecord[]> {
   const allKeys = await keys(store);
   const recordKeys = allKeys.filter(
@@ -89,8 +85,7 @@ export async function clearAllAnalyses(): Promise<void> {
   await clear(store);
 }
 
-// Counts heatmap keys rather than cropped-preview keys — the two are always
-// written together, so either works, and one is enough.
+// Counts heatmap keys only; previews are always written alongside them.
 export async function getCacheInfo(): Promise<{ cachedCount: number }> {
   const allKeys = await keys(store);
   const cachedCount = allKeys.filter(
@@ -99,10 +94,7 @@ export async function getCacheInfo(): Promise<{ cachedCount: number }> {
   return { cachedCount };
 }
 
-// Deletes only the Grad-CAM heatmap + cropped-preview blobs, keeping
-// records and original images — for reclaiming space without losing
-// history. These regenerate automatically next time that image is
-// re-analyzed with a backend available.
+// Reclaims space without losing history — these regenerate on re-analysis.
 export async function clearCachedPreviews(): Promise<void> {
   const allKeys = await keys(store);
   const cacheKeys = allKeys.filter(
@@ -113,10 +105,8 @@ export async function clearCachedPreviews(): Promise<void> {
   await Promise.all(cacheKeys.map((k) => del(k, store)));
 }
 
-// Deletes any analysis older than `maxAgeDays`. Called on app load when
-// Settings > History & Storage > "Auto-delete after" isn't "never".
-// Returns the number of analyses removed, so the caller can decide whether
-// to refresh a list it's already rendered.
+// Runs on app load when "Auto-delete after" isn't "never". Returns the count
+// removed, so a caller that already rendered a list knows to refresh it.
 export async function sweepExpiredAnalyses(maxAgeDays: number): Promise<number> {
   const all = await listAnalyses();
   const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;

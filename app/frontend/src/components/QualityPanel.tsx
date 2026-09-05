@@ -1,24 +1,9 @@
 import { Icon, Panel, PanelHeader, Badge, Eyebrow } from "./ui";
 import type { AnalysisRecord } from "../lib/types";
 
-/**
- * Image suitability, before the prediction.
- *
- * Important: this app has no gradability model. What genuinely exists is
- * format/size/dimension validation (lib/imageQuality.ts client-side,
- * ml/preprocessing.py::validate_image_bytes server-side) plus whether the
- * fundus crop found a circle. Those are shown as real, passing/failing checks.
- *
- * Blur, illumination and contrast are exactly the checks a real fundus
- * gradability model would add, and they are shown here as explicitly
- * not-implemented rows rather than being invented from an uncalibrated
- * heuristic. A Laplacian variance would be easy to compute and impossible to
- * threshold honestly — calling an image "too blurry for reliable analysis"
- * without a validated cutoff would be a fabricated clinical judgement, which
- * this project's rules forbid. When a gradability model exists, each row
- * below becomes a real value with no layout change.
- */
-
+// Input-validity checks only — this app has no gradability model. Blur and
+// illumination appear as explicit "not implemented" rows rather than guesses
+// from an uncalibrated heuristic; each becomes a real value if one is added.
 type CheckState = "pass" | "warn" | "fail" | "not-implemented";
 
 interface QualityCheckRow {
@@ -67,9 +52,8 @@ export function buildQualityChecks(record: AnalysisRecord): QualityCheckRow[] {
   ];
 
   if (backend) {
-    // crop_to_fundus falls back to the full frame when the largest contour
-    // covers under 15% of the image, so a crop materially smaller than the
-    // original is real evidence a fundus circle was located.
+    // crop_to_fundus returns the full frame when it finds nothing, so a smaller
+    // crop is real evidence a circle was located.
     const cropped =
       backend.croppedWidth < width || backend.croppedHeight < height;
     checks.push({

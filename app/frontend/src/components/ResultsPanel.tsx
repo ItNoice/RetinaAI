@@ -10,16 +10,9 @@ import { formatBytes, formatMs, formatPercent } from "../lib/format";
 import { Badge, Callout, DataList, Eyebrow, Icon, Panel, PanelHeader, NotAvailable } from "./ui";
 import type { DataRow } from "./ui";
 
-/**
- * Confidence, described in words as well as a number.
- *
- * These bands describe the *model's own softmax output*, not diagnostic
- * certainty, and the wording is chosen to keep that distinction: "the model
- * was decisive" says something about the model, "this is definitely severe"
- * would say something about an eye. There is no clinical validation behind
- * the cut-points, so they are framed as a reading aid and never as a
- * threshold for action.
- */
+// Wording describes the model, not the eye: "decisive" says something about a
+// softmax output; "definitely severe" would be a clinical claim. The cut-points
+// have no validation behind them, so they're a reading aid, not a threshold.
 function describeConfidence(confidence: number): { label: string; tone: "ok" | "warn" | "neutral" } {
   if (confidence >= 0.85) return { label: "Decisive", tone: "ok" };
   if (confidence >= 0.6) return { label: "Moderate", tone: "neutral" };
@@ -55,7 +48,7 @@ export default function ResultsPanel({ record }: { record: AnalysisRecord }) {
   );
 }
 
-/** The headline result. Everything above the fold in the analysis panel. */
+/** The headline result. */
 function PredictionCard({
   prediction,
   preferences,
@@ -68,8 +61,7 @@ function PredictionCard({
     preferences.minConfidenceWarning !== null &&
     prediction.confidence < preferences.minConfidenceWarning;
 
-  // Ranked, so the runner-up is visible without reading the whole list — the
-  // gap between first and second is the most useful thing on this panel.
+  // The gap between first and second is the most useful number on this panel.
   const ranked = DR_CLASSES.map((cls) => ({
     cls,
     p: prediction.probabilities[cls] ?? 0,
@@ -185,8 +177,7 @@ function PredictionCard({
 }
 
 function ConfidenceMeter({ value }: { value: number }) {
-  // Segmented rather than continuous: five ticks read as an instrument
-  // readout and make it harder to over-interpret a single pixel of bar.
+  // Segmented, not continuous — harder to over-read a single pixel of bar.
   const segments = 5;
   const filled = Math.round(value * segments);
   return (
@@ -272,15 +263,9 @@ function SupportingDataCard({
   );
 }
 
-/**
- * Measurements — a deliberate shell.
- *
- * The backend computes no anatomical measurements: no vessel calibre, no
- * cup-to-disc ratio, no lesion counts, no reference ranges. Rather than
- * inventing plausible numbers or hiding the capability gap, the section states
- * what the pipeline does and does not produce. When a measurement model is
- * added, its values drop into this table unchanged.
- */
+// A deliberate shell: the backend computes no measurements, and the gap is
+// stated rather than hidden or filled with plausible numbers. A measurement
+// model's values would drop into this table unchanged.
 function MeasurementsCard() {
   const planned = [
     "Cup-to-disc ratio",

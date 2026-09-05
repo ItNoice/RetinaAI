@@ -1,14 +1,8 @@
 import type { ReactNode } from "react";
 import type { Tone } from "./Badge";
 
-/**
- * Inline message block — errors, warnings, notices.
- *
- * The redesign brief asks for errors that are "informative but not alarming",
- * so these are bordered soft-tint blocks with an icon and a heading rather
- * than saturated fills. Every tone carries its own icon, so the tone is
- * legible without relying on colour.
- */
+// Inline errors, warnings and notices. Soft tints rather than saturated fills —
+// informative without being alarming.
 const TONE_CLASSES: Record<Tone, string> = {
   neutral: "border-clinic-200 bg-clinic-50 text-clinic-700",
   ok: "border-ok-500/30 bg-ok-soft text-ok-soft-ink",
@@ -17,6 +11,7 @@ const TONE_CLASSES: Record<Tone, string> = {
   accent: "border-accent-400/40 bg-accent-soft text-accent-soft-ink",
 };
 
+// One per tone, so the tone is legible without relying on colour.
 const ICONS: Record<Tone, ReactNode> = {
   neutral: (
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

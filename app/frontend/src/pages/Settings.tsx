@@ -13,17 +13,14 @@ import { usePreferences } from "../hooks/usePreferences";
 import { useTheme } from "../hooks/useTheme";
 import { useToast } from "../hooks/useToast";
 
-// Each entry is one self-contained settings group. To add a new setting
-// later: build a small component like AppearanceSettings (it owns its own
-// state/persistence via usePreferences), then add one entry here. Nothing
-// else on this page needs to change. `keywords` is a flat list of the
-// individual setting labels inside that section, so the search box below
-// can match on them without every sub-component needing to expose its own
-// searchable index.
+// One self-contained group per entry: write a component that owns its own
+// persistence via usePreferences, add a line here, done.
 interface SettingsGroup {
   id: string;
   title: string;
   description?: string;
+  /** The setting labels inside the section, so search can match them without
+   *  each sub-component exposing its own index. */
   keywords: string;
   render: () => ReactNode;
 }

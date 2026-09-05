@@ -11,12 +11,9 @@ import { useModelStatus } from "./hooks/useStatus";
 import { Icon, StatusDot } from "./components/ui";
 import { formatShortcutBinding } from "./lib/formatShortcut";
 
-/**
- * Routes that take over the full viewport instead of sitting in a centred
- * reading column. These are the ones where the fundus image is the subject:
- * constraining them to a text measure wastes exactly the space the image
- * wants, and puts the analysis panel below the fold.
- */
+// Routes where the image is the subject, so they take the full viewport — a
+// text-measure column wastes the space the image wants and pushes the analysis
+// panel below the fold.
 const WORKSPACE_ROUTES = [/^\/analysis\/[^/]+$/, /^\/analyze$/, /^\/$/];
 
 function isWorkspaceRoute(pathname: string): boolean {
@@ -48,9 +45,8 @@ function App() {
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Instrument chrome. The rail and this bar share one dark band
-            regardless of theme, the way an imaging workstation keeps its
-            controls visually separate from the image being read. */}
+        {/* One dark band shared with the rail in either theme, the way an
+            imaging workstation separates controls from the image. */}
         <header className="shrink-0 bg-chrome-900 border-b border-chrome-700">
           <div className="flex items-center gap-3 h-12 px-3 sm:px-4">
             <button
@@ -66,9 +62,8 @@ function App() {
 
             <div className="flex-1" />
 
-            {/* The disclaimer stays on every page, as it must — moved inline
-                so it costs a chip rather than a full strip, and reads as part
-                of the instrument rather than a dismissible cookie bar. */}
+            {/* On every page, as it must be — inline so it costs a chip rather
+                than a strip, and doesn't read as a dismissible cookie bar. */}
             <NavLink
               to="/about"
               className="hidden md:inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium text-warn-soft-ink bg-warn-soft/90 hover:bg-warn-soft transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
@@ -111,8 +106,7 @@ function App() {
             </button>
           </div>
 
-          {/* Compact form of the disclaimer for narrow screens, where the
-              inline chip above is hidden. */}
+          {/* Narrow screens, where the chip above is hidden. */}
           <NavLink
             to="/about"
             className="md:hidden block bg-warn-soft px-4 py-1 text-center text-[11px] text-warn-soft-ink"

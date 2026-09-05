@@ -1,14 +1,6 @@
 import { Icon, type IconName } from "./ui";
 
-/**
- * The five stages an image passes through, shown as a single strip.
- *
- * Every stage here corresponds to something the pipeline genuinely does:
- * validation (lib/imageQuality.ts + the backend's validate_image_bytes),
- * preprocessing (crop to the fundus circle, resize to 224, ImageNet
- * normalize), inference (ResNet-18, 5-way softmax) and the rendered result.
- * Nothing is a decorative step.
- */
+// Every stage maps to something the pipeline genuinely does — none is decorative.
 export type StageState = "pending" | "active" | "done" | "warn" | "error" | "unavailable";
 
 export interface Stage {
@@ -16,7 +8,7 @@ export interface Stage {
   label: string;
   icon: IconName;
   state: StageState;
-  /** Short factual detail — a real measurement or status, never filler. */
+  /** A real measurement or status, never filler. */
   detail?: string;
 }
 
@@ -61,9 +53,8 @@ const STATE_GLYPHS: Partial<Record<StageState, IconName>> = {
 
 function StageIcon({ stage }: { stage: Stage }) {
   const style = STATE_STYLES[stage.state];
-  // The glyph carries state as a shape, not only as a colour — colour alone
-  // fails for the ~8% of men with a red/green deficiency. Stages that haven't
-  // resolved keep their own icon.
+  // Shape as well as colour, which alone fails for red/green deficiency.
+  // Unresolved stages keep their own icon.
   const glyph: IconName = STATE_GLYPHS[stage.state] ?? stage.icon;
 
   return (
@@ -112,8 +103,7 @@ export default function WorkflowStages({
                 }`}
               />
             )}
-            {/* Screen readers get the state as words, since the visual state
-                is carried by icon + colour. */}
+            {/* The state as words, since visually it's icon + colour. */}
             <span className="sr-only">{style.label}</span>
           </li>
         );

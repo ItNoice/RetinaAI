@@ -2,21 +2,9 @@ import { useState } from "react";
 import { Icon, DataList, NotAvailable, Eyebrow, type DataRow } from "./ui";
 import type { AnalysisRecord } from "../lib/types";
 
-/**
- * Study / acquisition context, kept deliberately separate from the AI result.
- *
- * Two rules shape this panel:
- *
- * 1. Patient and acquisition fields are shown as *not recorded*, not as demo
- *    values. This app stores no patient data by design (see the Ethics page),
- *    and a plausible-looking fake MRN or laterality in a medical UI is exactly
- *    the kind of thing that gets screenshotted and mistaken for real. The rows
- *    exist so the layout is ready for a DICOM or EHR source; they carry an
- *    explicit reason instead of a value.
- * 2. Everything that *is* shown is real: the record's own id, the analysis
- *    timestamp, the file it came from, and the model build that produced the
- *    result.
- */
+// Patient fields read "not recorded", never demo values: a fake MRN in a
+// medical UI is exactly what gets screenshotted and mistaken for real. The rows
+// keep the layout ready for a DICOM source. Everything shown is real.
 function formatTimestamp(ms: number): string {
   return new Date(ms).toLocaleString(undefined, {
     year: "numeric",

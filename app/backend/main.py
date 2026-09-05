@@ -1,11 +1,7 @@
 """RetinaAI backend API.
 
-Validates and preprocesses uploaded fundus images, and — when a trained
-checkpoint exists — returns a real prediction with a Grad-CAM heatmap.
-
-The one invariant worth stating up front: /api/analyze returns
-`prediction: null` when no model is loaded. It does not fall back, guess, or
-default to a class. Everything downstream is built on that.
+/api/analyze returns `prediction: null` when no model is loaded — it never
+falls back or guesses. Everything downstream is built on that.
 """
 
 from __future__ import annotations
@@ -16,9 +12,8 @@ import sys
 import time
 from pathlib import Path
 
-# `ml` is a top-level sibling package, not part of app.backend. Putting the
-# repo root on sys.path here means `uvicorn app.backend.main:app` works from
-# anywhere, rather than only from the repo root.
+# `ml` is a top-level sibling package — this makes `uvicorn app.backend.main:app`
+# work from any directory, not just the repo root.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -58,11 +53,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Any localhost port, deliberately. Vite silently moves to 5174, 5175,
-    # ... when 5173 is taken, and a hardcoded list turns that into a CORS
-    # failure that looks exactly like the backend being down — an afternoon
-    # of debugging the wrong thing. This server is local-only and unauthed,
-    # so there's nothing here to protect with an origin allowlist.
+    # Any localhost port: Vite moves to 5174, 5175, ... when 5173 is taken, and
+    # a hardcoded list turns that into a CORS error that looks like the backend
+    # being down. Local-only and unauthed, so there's nothing to protect here.
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -96,11 +89,8 @@ def training_log() -> TrainingLogResponse:
 
 @app.post("/api/model/reload")
 def model_reload() -> ModelStatusResponse:
-    """Pick up a retrained checkpoint without restarting the server.
-
-    Returns the resulting status, same shape as GET /api/model/status, so the
-    caller can see straight away whether the new checkpoint actually loaded.
-    """
+    """Pick up a retrained checkpoint without restarting the server."""
+    # Returns the resulting status so the caller can see whether it loaded.
     reload_model()
     return get_model_status()
 
@@ -113,8 +103,7 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
     try:
         result = preprocess(data)
     except ImageValidationError as exc:
-        # Only hard failures land here. An undersized image still gets
-        # analyzed, flagged via result.too_small below.
+        # Hard failures only — undersized images are flagged below, not rejected.
         raise HTTPException(
             status_code=422, detail={"code": exc.code, "message": exc.message}
         ) from exc
@@ -132,8 +121,7 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
 
     raw_prediction = predict(result.normalized)
     if raw_prediction is None:
-        # No model loaded. Return the preprocessing results on their own —
-        # the frontend renders this as "model unavailable".
+        # No model. Preprocessing results only; the frontend shows "model unavailable".
         return AnalyzeResponse(
             width=result.original_width,
             height=result.original_height,
@@ -164,13 +152,7 @@ async def analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
 
 
 def _build_heatmap(normalized_image, predicted_class_idx: int) -> str | None:
-    """Grad-CAM for the prediction, or None if it couldn't be produced.
-
-    Explainability is a nice-to-have on top of the prediction, so a failure
-    here degrades to "no heatmap" rather than losing the analysis the user
-    actually asked for. It's logged loudly, because silently missing heatmaps
-    are otherwise very easy not to notice.
-    """
+    """Grad-CAM for the prediction, or None if it couldn't be produced."""
     model = get_loaded_model()
     if model is None:
         return None
@@ -178,6 +160,8 @@ def _build_heatmap(normalized_image, predicted_class_idx: int) -> str | None:
     try:
         return _b64(generate_gradcam_png(model, normalized_image, predicted_class_idx))
     except Exception:
+        # The heatmap is a nice-to-have; don't lose the analysis over it. Logged
+        # loudly, because a silently missing heatmap is easy not to notice.
         logger.exception("Grad-CAM generation failed; returning prediction without a heatmap")
         return None
 

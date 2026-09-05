@@ -1,7 +1,5 @@
-// The ICDR severity scale, in order. Order matters beyond presentation: it's
-// the index the model's output layer predicts, and it mirrors DR_CLASSES in
-// ml/types.py. Reordering here without retraining silently relabels every
-// prediction in the app.
+// The ICDR scale. Order is the index the output layer predicts and mirrors
+// ml/types.py — reordering without retraining relabels every prediction.
 export const DR_CLASSES = [
   "No DR",
   "Mild",
@@ -12,10 +10,8 @@ export const DR_CLASSES = [
 
 export type DRClass = (typeof DR_CLASSES)[number];
 
-// General, educational descriptions of what each ICDR severity grade means
-// clinically — not a description of any specific uploaded image. Always
-// paired in the UI with "the model predicted..." framing, never presented
-// as a finding about the user's photograph.
+// What each grade means clinically in general — never a finding about a
+// specific upload. Always shown with "the model predicted..." framing.
 export const DR_CLASS_DESCRIPTIONS: Record<DRClass, string> = {
   "No DR":
     "No visible signs of diabetic retinopathy on this grading scale.",
@@ -51,9 +47,7 @@ export interface QualityCheck {
 export interface AnalysisRecord {
   id: string;
   filename: string;
-  // User-supplied rename (History → Rename). Falls back to `filename`
-  // wherever a display name is needed; the original filename is never
-  // overwritten so it's still available for export/report purposes.
+  // History → Rename. Never overwrites `filename`, which exports still need.
   label?: string;
   createdAt: number;
   width: number;
@@ -61,26 +55,18 @@ export interface AnalysisRecord {
   fileSizeBytes: number;
   mimeType: string;
   quality: QualityCheck;
-  // Only ever set from a backend response. Null is a real state the UI has
-  // to render — "no model loaded" — and is never filled in with a default.
+  // Null means "no model loaded" — a real state the UI renders, never a default.
   prediction: PredictionResult | null;
-  // Set when the backend (app/backend) actually processed this image —
-  // absent when the backend was unreachable and the app fell back to
-  // client-only quality checks.
+  // Absent when the backend was unreachable and only client checks ran.
   backend?: {
     croppedWidth: number;
     croppedHeight: number;
     preprocessingTimeMs: number;
   };
-  // True when a Grad-CAM heatmap + cropped preview were stored alongside
-  // this analysis (only possible when prediction is non-null). Fetch them
-  // via lib/storage's getCroppedPreviewBlob/getHeatmapBlob.
+  // Heatmap + preview are in storage; fetch with getHeatmapBlob et al.
   hasExplainability?: boolean;
-  // True when this upload was intentionally NOT sent for analysis yet
-  // (Settings > AI Analysis > "Automatically analyze after upload" was
-  // off). Distinguishes "not analyzed yet, click Analyze" from "the
-  // backend was unreachable" — both leave prediction: null, but only the
-  // former should offer a manual "Analyze now" action.
+  // Auto-analyze was off. Distinguishes "click Analyze" from "backend was
+  // down" — both leave prediction null, but only this one offers the button.
   awaitingManualAnalysis?: boolean;
 }
 

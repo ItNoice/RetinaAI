@@ -1,16 +1,8 @@
 import type { ReactNode } from "react";
 
-/**
- * Status badge and status dot.
- *
- * The same three-state analysis badge was implemented three times with three
- * different shapes (History, RecentAnalyses, ModelStatusCard). This is the
- * single definition.
- *
- * Every tone pairs a colour with a label, and `dot` adds a non-colour shape
- * cue — the app's accessibility rule is that colour alone never carries
- * meaning.
- */
+// Badge and dot. The same three-state badge existed three times, in three
+// shapes. Every tone pairs colour with a label; `dot` adds a shape cue, since
+// colour alone never carries meaning here.
 export type Tone = "neutral" | "ok" | "warn" | "danger" | "accent";
 
 const TONES: Record<Tone, string> = {

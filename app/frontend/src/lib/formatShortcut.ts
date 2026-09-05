@@ -1,22 +1,14 @@
-// Shortcut bindings: how a stored binding ("mod+k", "ArrowLeft") is displayed,
-// and how a raw KeyboardEvent key maps onto one.
-//
-// hooks/useKeyboardShortcuts.ts matches against the stored string directly; it
-// shares normalizeShortcutKey with the Settings recorder so a key recorded in
-// one place is guaranteed to match in the other.
+// Display and key-normalization for shortcut bindings ("mod+k", "ArrowLeft").
 
-// "+" and "-" are what Settings shows and what the zoom shortcuts are bound
-// to, but an unshifted US keyboard sends "=" and "_" for those keys. Accept
-// both so zooming doesn't silently require Shift.
+// An unshifted US keyboard sends "=" and "_" where the bindings say "+" and
+// "-", so accept both — otherwise zooming silently requires Shift.
 export function normalizeShortcutKey(key: string): string {
   if (key === "=") return "+";
   if (key === "_") return "-";
   return key;
 }
 
-// "mod" is Cmd on macOS and Ctrl everywhere else, matching what
-// matchesBinding() accepts (it takes either). Showing ⌘ to a Linux user is
-// the kind of small wrongness that makes a shortcut list feel untrustworthy.
+// matchesBinding() accepts either modifier; this picks the right label to show.
 function modLabel(): string {
   const platform =
     typeof navigator === "undefined" ? "" : navigator.platform || navigator.userAgent;

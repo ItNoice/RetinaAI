@@ -8,12 +8,8 @@ import { useModelStatus } from "../hooks/useStatus";
 import { ButtonLink, Callout, Eyebrow, Icon, Panel, StatusDot } from "../components/ui";
 import type { IconName } from "../components/ui";
 
-/**
- * The pipeline, stated once. These are the five things that actually happen
- * to an image — the same stages the workflow strip reports on during a real
- * analysis, described here so the workflow is understandable before anyone
- * uploads anything.
- */
+// The same five stages the workflow strip reports during a real analysis,
+// described here so the pipeline is understandable before uploading anything.
 const PIPELINE: { icon: IconName; label: string; detail: string }[] = [
   { icon: "image", label: "Image", detail: "JPEG, PNG, TIFF or WebP fundus photograph" },
   { icon: "check-circle", label: "Quality check", detail: "Format, size and dimension validation" },
@@ -30,8 +26,7 @@ export default function Dashboard() {
   return (
     <div className="h-full overflow-y-auto panel-scroll">
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Primary action. The only full-width element on the page, and the
-            only accent-filled control — nothing else competes with it. */}
+        {/* The only full-width element and the only accent fill on the page. */}
         <Panel padding="none" className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-5 p-5">
             <div className="min-w-0">
@@ -79,8 +74,7 @@ export default function Dashboard() {
           </Callout>
         )}
 
-        {/* Status row. Secondary by construction: smaller type, no accent
-            fills, and below the primary action. */}
+        {/* Secondary by construction: smaller type, no fills, below the action. */}
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <ModelStatusCard />
           <DatasetInfoCard />

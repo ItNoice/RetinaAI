@@ -1,10 +1,6 @@
-// A single, versioned preferences object persisted to localStorage — the
-// same pattern as lib/theme.ts, generalized. Every field here changes real,
-// observable behavior somewhere in the app; nothing here is decorative.
-// Settings that would require features this project doesn't actually have
-// (GPU inference, quantized precision, batch inference, report export) are
-// deliberately NOT modeled here — see the Advanced section's read-only info
-// panel instead.
+// One preferences object in localStorage. Every field changes real behavior
+// somewhere; settings for features this project lacks (GPU inference,
+// quantization) are deliberately absent — see Advanced's read-only panel.
 
 export type AccentColor = "blue" | "teal" | "violet" | "slate";
 export type Density = "comfortable" | "compact";
@@ -14,8 +10,7 @@ export type DefaultMetric = "accuracy" | "f1" | "recall" | "precision";
 export type DecimalPlaces = 1 | 2 | 4;
 export type AutoDeleteAfter = "never" | 7 | 30;
 
-// One binding per shortcut action — see hooks/useKeyboardShortcuts.ts. "mod"
-// stands for Ctrl on Windows/Linux, Cmd on macOS (resolved at match time).
+// "mod" is Ctrl on Windows/Linux, Cmd on macOS, resolved at match time.
 export type ShortcutAction =
   | "upload"
   | "analyze"
@@ -54,9 +49,7 @@ export interface Preferences {
   // Image viewer
   defaultZoom: DefaultZoom;
   rememberZoom: boolean;
-  // Not user-facing controls themselves — the last scale/pan ImageViewer
-  // was left at, persisted here (rather than a separate storage
-  // mechanism) so "remember zoom" can restore it on the next image.
+  // Not controls — the viewer's last scale/pan, so "remember zoom" can restore it.
   lastZoomScale: number;
   lastZoomOffsetX: number;
   lastZoomOffsetY: number;
@@ -76,10 +69,8 @@ export interface Preferences {
   showModelInfo: boolean;
   showProcessingTime: boolean;
   experimentalModelsEnabled: boolean;
-  // Switches the viewer to "overlay" mode automatically once a fresh
-  // analysis with a real Grad-CAM heatmap completes, instead of leaving it
-  // on "Original". Independent of "Default view" above, which only applies
-  // when reopening an *existing* analysis.
+  // Jumps to overlay when a fresh analysis lands. Separate from "Default view"
+  // above, which applies to reopening an existing analysis.
   autoShowGradCam: boolean;
 
   // Research
@@ -96,8 +87,7 @@ export interface Preferences {
   storeUploadedImages: boolean;
   autoDeleteAfterDays: AutoDeleteAfter;
   showLocalProcessingIndicator: boolean;
-  // Strips filename and exact timestamp from JSON/report exports, keeping
-  // only relative timing ("analyzed 3 days ago") and the analysis itself.
+  // Drops filename and exact timestamp from exports, keeping relative timing.
   anonymizeExports: boolean;
   includeImagesInReport: boolean;
 
@@ -110,16 +100,11 @@ export interface Preferences {
   apiBaseUrlOverride: string | null;
   debugLogging: boolean;
 
-  // Research Mode — a master switch, not just a label. See Sidebar.tsx and
-  // App.tsx: off hides Research/Experiments/Model Lab from primary nav and
-  // gates advanced result panels; on exposes all of it plus a visible
-  // "RESEARCH MODE" indicator.
+  // A master switch, not a label: off hides Research/Experiments/Model Lab
+  // from nav and gates the advanced result panels.
   researchMode: boolean;
 
-  // Keyboard shortcuts — see hooks/useKeyboardShortcuts.ts. Always a full
-  // ShortcutBindings map; DEFAULT_PREFERENCES seeds it from
-  // DEFAULT_SHORTCUT_BINDINGS and readStoredPreferences merges in any newer
-  // actions a saved-but-older preferences object is missing.
+  // Always a full map — readStoredPreferences fills in any missing actions.
   shortcutBindings: ShortcutBindings;
 }
 
@@ -157,8 +142,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   defaultMetric: "accuracy",
   decimalPlaces: 1,
 
-  // Local storage is the default, not an opt-in — but it's a real choice
-  // the user can see and reverse, not a silent assumption.
+  // On by default, but visible and reversible — not a silent assumption.
   storeAnalysisResults: true,
   storeUploadedImages: true,
   autoDeleteAfterDays: "never",
@@ -185,11 +169,9 @@ export function readStoredPreferences(): Preferences {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_PREFERENCES;
     const parsed = JSON.parse(raw) as Partial<Preferences>;
-    // Merge over defaults so a preferences object saved by an older version
-    // of this app (missing newer fields) doesn't produce `undefined`s.
-    // shortcutBindings needs its own merge — otherwise a saved map from
-    // before a new shortcut action existed would leave that action's key
-    // undefined instead of falling back to its default binding.
+    // Merge over defaults so an object saved by an older version doesn't
+    // produce undefineds. shortcutBindings needs its own merge for the same
+    // reason, one level down.
     return {
       ...DEFAULT_PREFERENCES,
       ...parsed,

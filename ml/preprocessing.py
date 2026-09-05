@@ -1,15 +1,7 @@
-"""Image validation and preprocessing for retinal fundus photographs.
+"""Validation and preprocessing for fundus photographs.
 
 raw bytes -> validate -> crop to the fundus circle -> resize -> normalize.
-
-The backend and the training pipeline both go through here, which is the
-whole point: if serving preprocessed differently from training, the model
-would see a subtly different distribution at inference time and quietly get
-worse. Keep this module the single path.
-
-Fundus photos are a bright circle on a black surround, usually with a lot of
-surround. Cropping to the circle before resizing means the retina keeps most
-of the 224x224 budget instead of spending it on black borders.
+Training and serving both go through here so the model sees one distribution.
 """
 
 from __future__ import annotations
@@ -25,22 +17,18 @@ SUPPORTED_FORMATS = {"JPEG", "PNG", "TIFF", "WEBP"}
 MIN_DIMENSION_PX = 128
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
-# The backbone is ImageNet-pretrained, so inputs have to be normalized with
-# ImageNet's statistics for the pretrained weights to mean anything.
+# ImageNet stats, because the backbone is ImageNet-pretrained.
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 class ImageValidationError(ValueError):
-    """An upload that can't be analyzed.
-
-    `code` is machine-readable and deliberately matches the frontend's
-    QualityIssue union, so the API layer can pass it straight through
-    instead of maintaining a translation table.
-    """
+    """An upload that can't be analyzed."""
 
     def __init__(self, code: str, message: str):
         super().__init__(message)
+        # Codes match the frontend's QualityIssue union, so the API can pass
+        # them straight through.
         self.code = code
         self.message = message
 
@@ -57,14 +45,8 @@ class PreprocessResult:
 
 
 def validate_image_bytes(data: bytes) -> tuple[Image.Image, bool]:
-    """Decode upload bytes to an RGB image, plus a flag for "suspiciously small".
-
-    Unreadable, oversized, and corrupt files raise. Small ones don't: a
-    clinician uploading a low-resolution photo should get a result with a
-    quality warning attached, not a rejection and certainly not a silent
-    "No DR".
-    """
-    # Check size before decoding — no point handing a 200 MB file to Pillow.
+    """Decode upload bytes to RGB, plus a flag for "suspiciously small"."""
+    # Size first — no point handing a 200 MB file to Pillow.
     if len(data) > MAX_FILE_SIZE_BYTES:
         raise ImageValidationError(
             "file-too-large",
@@ -77,9 +59,7 @@ def validate_image_bytes(data: bytes) -> tuple[Image.Image, bool]:
 
     try:
         img = Image.open(BytesIO(data))
-        # Pillow is lazy; load() is what actually forces a decode, and where
-        # truncated files blow up rather than at first pixel access.
-        img.load()
+        img.load()  # Pillow is lazy; this is what actually decodes, and where truncated files blow up
     except (UnidentifiedImageError, OSError) as exc:
         raise ImageValidationError(
             "not-an-image", "This file could not be read as an image."
@@ -93,8 +73,7 @@ def validate_image_bytes(data: bytes) -> tuple[Image.Image, bool]:
         )
 
     try:
-        # Fundus photos are usually RGB already, but CMYK TIFFs and paletted
-        # PNGs do turn up, and everything downstream assumes 3 channels.
+        # CMYK TIFFs and paletted PNGs turn up; everything downstream wants 3 channels.
         img = img.convert("RGB")
     except OSError as exc:
         raise ImageValidationError(
@@ -102,35 +81,29 @@ def validate_image_bytes(data: bytes) -> tuple[Image.Image, bool]:
         ) from exc
 
     width, height = img.size
+    # Soft failure: small images get analyzed with a warning, not rejected.
     too_small = width < MIN_DIMENSION_PX or height < MIN_DIMENSION_PX
 
     return img, too_small
 
 
 def crop_to_fundus(image: np.ndarray) -> np.ndarray:
-    """Crop away the black surround around the fundus circle.
-
-    Returns the image untouched when there's no clear circle to find — some
-    images are already tightly cropped, and a bad crop is worse than none.
-    """
+    """Crop away the black surround around the fundus circle."""
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-    # Threshold at 10 rather than something adaptive: the surround is
-    # near-black by construction, and a fixed cut works across the whole
-    # brightness range of real fundus cameras without tuning.
+    # Fixed cut at 10: the surround is near-black by construction, so this
+    # works across every camera's brightness range without tuning.
     _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return image
+        return image  # already tightly cropped; a bad crop is worse than none
 
-    # The fundus is by far the largest lit region; smaller contours are
-    # burned-in timestamps, camera artifacts, and lens flare.
+    # The fundus is the largest lit region; the rest is timestamps and flare.
     largest = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest)
 
-    # Sanity check: if the "fundus" we found is tiny, we latched onto an
-    # artifact instead. Bail out rather than crop the retina away.
+    # A "fundus" this small means we latched onto an artifact — don't crop the retina away.
     min_area_fraction = 0.15
     if w * h < min_area_fraction * image.shape[0] * image.shape[1]:
         return image
@@ -139,16 +112,14 @@ def crop_to_fundus(image: np.ndarray) -> np.ndarray:
 
 
 def resize_image(image: np.ndarray, size: int) -> np.ndarray:
-    # INTER_AREA because we're almost always downscaling, and it avoids the
-    # aliasing that INTER_LINEAR leaves on fine vessel structure.
+    # INTER_AREA: we're downscaling, and it doesn't alias the fine vessels.
     return cv2.resize(image, (size, size), interpolation=cv2.INTER_AREA)
 
 
 def normalize_image(image: np.ndarray) -> np.ndarray:
     float_img = image.astype(np.float32) / 255.0
     normalized = (float_img - IMAGENET_MEAN) / IMAGENET_STD
-    # HWC -> CHW, the layout torchvision models expect.
-    return np.transpose(normalized, (2, 0, 1))
+    return np.transpose(normalized, (2, 0, 1))  # HWC -> CHW, what torchvision expects
 
 
 def preprocess(data: bytes, size: int = 224) -> PreprocessResult:
@@ -162,9 +133,8 @@ def preprocess(data: bytes, size: int = 224) -> PreprocessResult:
     resized = resize_image(cropped, size)
     normalized = normalize_image(resized)
 
-    # Keep the resized (pre-normalization) image around: the frontend
-    # composites the Grad-CAM heatmap over this exact frame, so it has to be
-    # the same crop the model saw, not the original upload.
+    # Keep the resized-but-not-normalized frame: the heatmap is drawn over
+    # this exact crop, so it can't be the original upload.
     preview_buffer = BytesIO()
     Image.fromarray(resized).save(preview_buffer, format="PNG")
 

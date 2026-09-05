@@ -1,15 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-/**
- * The app's button.
- *
- * Previously there were five different "primary" strings, three of which had
- * no focus ring at all. Centralising means every control in the workstation
- * gets the same hit area, the same focus treatment, and the same disabled
- * behaviour — which matters more here than usual, because a lot of these sit
- * in a toolbar over a medical image where a missed click is expensive.
- */
+// One button. There were five "primary" strings before this, three with no
+// focus ring — and a lot of these sit in a toolbar over a medical image.
 export type ButtonVariant =
   | "primary"
   | "secondary"
@@ -40,8 +33,7 @@ const SIZES: Record<ButtonSize, string> = {
   md: "h-9 px-4 text-sm gap-2 rounded-md",
 };
 
-// Square variants for icon-only buttons, so the hit target stays >= the
-// height rather than collapsing to the glyph width.
+// Square, so an icon-only hit target doesn't collapse to the glyph width.
 const ICON_SIZES: Record<ButtonSize, string> = {
   xs: "h-7 w-7 text-xs rounded",
   sm: "h-8 w-8 text-sm rounded-md",
@@ -88,8 +80,7 @@ export function Button({
   );
 }
 
-/** Same visual treatment for router links, so a nav action never looks
- *  different from the button beside it. */
+/** Same treatment for router links, so a nav action matches the button beside it. */
 export function ButtonLink({
   to,
   variant = "secondary",

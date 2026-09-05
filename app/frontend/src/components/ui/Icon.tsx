@@ -1,13 +1,6 @@
-/**
- * One icon set, one convention.
- *
- * Icons were previously hand-written at each use site with inconsistent
- * viewBoxes, stroke widths and fill/stroke modes (one was both at once). These
- * are all 24×24, stroked, 1.5 weight, and inherit `currentColor`.
- *
- * No icon library on purpose — the whole set the app needs is small, and a
- * dependency would ship far more than that.
- */
+// All 24×24, stroked at 1.5, inheriting currentColor — these were hand-written
+// per use site before, with inconsistent viewBoxes and stroke modes. No icon
+// library: the set is small and a dependency would ship far more.
 export type IconName =
   | "overview"
   | "upload"

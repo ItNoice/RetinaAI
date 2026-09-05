@@ -1,6 +1,5 @@
-// Real per-class precision/recall/F1, derived from the confusion matrix
-// already returned by the backend — no new backend call needed, and no
-// numbers beyond what ml/evaluate.py actually computed.
+// Per-class precision/recall/F1, derived from the confusion matrix the backend
+// already returned — no extra call, and no numbers ml/evaluate.py didn't compute.
 export interface PerClassStats {
   className: string;
   support: number; // true instances of this class

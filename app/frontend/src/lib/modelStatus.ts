@@ -1,9 +1,6 @@
-// Shapes for the backend's model/dataset status, plus the values the UI shows
-// when the backend hasn't answered (yet, or at all).
-//
-// The fallbacks are deliberately the pessimistic ones: an unreachable backend
-// renders as "no model connected", never as a plausible-looking model that
-// isn't there. Everything real comes from lib/api.ts.
+// Status shapes, plus the fallbacks shown before the backend answers.
+// Deliberately pessimistic: unreachable renders as "no model connected", never
+// as a plausible model that isn't there. Real values come from lib/api.ts.
 export interface ModelStatusInfo {
   available: boolean;
   name: string;

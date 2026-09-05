@@ -18,10 +18,8 @@ function matchesBinding(e: KeyboardEvent, binding: string): boolean {
   return normalizeShortcutKey(e.key).toLowerCase() === key.toLowerCase();
 }
 
-// Actions that only make sense wherever the relevant component is mounted
-// (the image viewer, a browsable list) — dispatched on the shortcut bus
-// rather than handled here. "upload" and "help" are handled directly since
-// they're global (navigate, or a modal this hook's caller owns).
+// Only meaningful where the relevant component is mounted, so these go out on
+// the bus. "upload" and "help" are global and handled here directly.
 const DISPATCHED_ACTIONS: Partial<Record<ShortcutAction, ShortcutEventName>> = {
   analyze: "analyze",
   fullscreen: "fullscreen",

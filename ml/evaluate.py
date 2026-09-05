@@ -1,10 +1,4 @@
-"""Score the trained classifier on a held-out split and write the numbers to disk.
-
-Output goes to models/eval_metrics.json, which the backend serves on
-/api/metrics. Every number the app displays comes from a run of this script;
-if there's no checkpoint to evaluate, it exits rather than writing anything,
-because a research prototype showing invented metrics is worse than one
-showing none.
+"""Score the trained classifier on a held-out split, writing models/eval_metrics.json.
 
     python -m ml.evaluate --data-root datasets/ddr_raw/DR_grading --split test
 """
@@ -36,6 +30,7 @@ DEFAULT_OUTPUT_PATH = REPO_ROOT / "models" / "eval_metrics.json"
 
 
 def load_checkpoint(model_path: Path) -> tuple[torch.nn.Module, dict]:
+    # Exit rather than write anything: invented metrics are worse than none.
     if not model_path.exists():
         raise SystemExit(
             f"No checkpoint at {model_path}. Run ml/train.py first — there is "
@@ -43,8 +38,7 @@ def load_checkpoint(model_path: Path) -> tuple[torch.nn.Module, dict]:
         )
 
     checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
-    # freeze_backbone is irrelevant here; load_state_dict overwrites the
-    # weights and eval() disables the gradient bookkeeping either way.
+    # freeze_backbone is irrelevant: load_state_dict overwrites the weights anyway.
     model = create_model(num_classes=checkpoint["num_classes"], freeze_backbone=False)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -59,9 +53,7 @@ def collect_predictions(model: torch.nn.Module, loader: DataLoader):
 
     with torch.no_grad():
         for images, labels in loader:
-            # Softmax, not raw logits — roc_auc_score needs calibrated-ish
-            # per-class scores that sum to 1.
-            probs = torch.softmax(model(images), dim=1).numpy()
+            probs = torch.softmax(model(images), dim=1).numpy()  # roc_auc_score needs scores that sum to 1, not logits
             labels_out.extend(labels.numpy().tolist())
             preds_out.extend(probs.argmax(axis=1).tolist())
             probs_out.extend(probs.tolist())
@@ -70,12 +62,9 @@ def collect_predictions(model: torch.nn.Module, loader: DataLoader):
 
 
 def macro_roc_auc(y_true: np.ndarray, y_probs: np.ndarray, num_classes: int) -> float | None:
-    """One-vs-rest macro ROC-AUC, or None when it isn't defined.
-
-    A capped or small split can easily end up missing a class entirely, and
-    sklearn raises rather than guessing. None is the honest answer there; the
-    frontend renders it as "not available".
-    """
+    """One-vs-rest macro ROC-AUC, or None when it isn't defined."""
+    # A capped or small split can miss a class entirely. The frontend renders
+    # None as "not available" rather than showing a made-up number.
     if len(set(y_true.tolist())) < 2:
         return None
 
@@ -113,9 +102,7 @@ def evaluate(
     )
     y_true, y_pred, y_probs = collect_predictions(model, loader)
 
-    # Macro averaging throughout: with this much class imbalance, a
-    # micro-average is dominated by "No DR" and says almost nothing about
-    # whether the model can spot the severe grades.
+    # Macro averaging throughout — a micro-average here is just "No DR".
     return {
         "split": split,
         "dataset": checkpoint["trained_on"],
@@ -156,8 +143,7 @@ def main() -> None:
         args.max_per_class,
     )
 
-    # Merge into the existing file rather than replacing it: each split is
-    # evaluated in its own run, and the backend expects all three keys.
+    # Merge, don't replace: each split is a separate run of this script.
     existing: dict = {}
     if args.output.exists():
         try:

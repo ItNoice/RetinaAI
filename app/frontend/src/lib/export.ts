@@ -1,9 +1,5 @@
-// Export paths for a single analysis: the JSON download and the shared pieces
-// the print report reuses.
-//
-// The disclaimer travels with every export deliberately. A JSON file or a
-// printed page outlives the app's UI, and the framing that this isn't a
-// diagnosis has to survive with it.
+// JSON export, plus the pieces the print report shares. The disclaimer travels
+// with both: a file outlives the UI that framed it.
 import type { AnalysisRecord } from "./types";
 
 export const DISCLAIMER =
@@ -13,16 +9,12 @@ export const DISCLAIMER =
   "performance may differ across populations, cameras, image quality, and " +
   "clinical settings.";
 
-// The report adds this; the JSON export doesn't, since a JSON payload has no
-// images in it to misread.
+// Report only — a JSON payload has no image in it to misread.
 export const HEATMAP_DISCLAIMER =
   "A Grad-CAM heatmap, when shown, highlights regions that influenced the " +
   "model's prediction — it does not prove those regions contain disease.";
 
-// Shared by JSON export and the print report — "anonymize" strips the
-// original filename and exact timestamp, keeping only relative timing, so
-// an export can't leak a filename someone chose that happens to contain
-// identifying information.
+// "anonymize" drops the filename, which users sometimes put a patient name in.
 export function exportDisplayName(record: AnalysisRecord, anonymize: boolean): string {
   if (anonymize) return "Retinal analysis";
   return record.label ?? record.filename;
@@ -54,8 +46,7 @@ export function buildExportPayload(record: AnalysisRecord, anonymize: boolean) {
   };
 }
 
-// Anchor-click download: no File System Access API, no dependency, works in
-// every browser this app targets.
+// Anchor-click download — no dependency, works everywhere this app targets.
 export function exportAnalysisJson(record: AnalysisRecord, anonymize: boolean): void {
   const payload = buildExportPayload(record, anonymize);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
