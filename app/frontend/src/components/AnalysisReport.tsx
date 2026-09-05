@@ -1,0 +1,95 @@
+import { DR_CLASSES, DR_CLASS_DESCRIPTIONS, type AnalysisRecord } from "../lib/types";
+import { exportDisplayName, exportTimestamp } from "../lib/export";
+
+// Rendered off-screen at all times (`hidden print:block` — never visible on
+// screen) and shown only by index.css's #print-report print stylesheet,
+// which hides everything else on the page. window.print() on this becomes
+// a real, savable-as-PDF report with no PDF-generation dependency.
+export default function AnalysisReport({
+  record,
+  imageUrl,
+  heatmapUrl,
+  anonymize,
+  includeImages,
+}: {
+  record: AnalysisRecord;
+  imageUrl: string | null;
+  heatmapUrl: string | null;
+  anonymize: boolean;
+  includeImages: boolean;
+}) {
+  const { prediction, quality } = record;
+
+  return (
+    <div id="print-report" className="hidden print:block p-8 text-black bg-white">
+      <h1 className="text-xl font-semibold">RetinaAI — Analysis Report</h1>
+      <p className="text-sm mt-1">{exportDisplayName(record, anonymize)}</p>
+      <p className="text-xs text-gray-600">{exportTimestamp(record, anonymize)}</p>
+
+      {includeImages && imageUrl && (
+        <div className="mt-4 flex gap-4">
+          <div>
+            <p className="text-xs font-medium mb-1">Original</p>
+            <img src={imageUrl} alt="Retinal fundus photograph" className="w-56 h-56 object-contain border border-gray-300" />
+          </div>
+          {heatmapUrl && (
+            <div>
+              <p className="text-xs font-medium mb-1">Grad-CAM heatmap</p>
+              <img src={heatmapUrl} alt="Grad-CAM heatmap" className="w-56 h-56 object-contain border border-gray-300" />
+            </div>
+          )}
+        </div>
+      )}
+
+      <h2 className="text-sm font-semibold mt-5">Model prediction</h2>
+      {prediction ? (
+        <>
+          <p className="text-sm mt-1">
+            {prediction.predictedClass} — {(prediction.confidence * 100).toFixed(1)}% confidence
+          </p>
+          <p className="text-xs text-gray-600 mt-1 max-w-lg">
+            {DR_CLASS_DESCRIPTIONS[prediction.predictedClass]}
+          </p>
+          <table className="mt-2 text-xs w-64">
+            <tbody>
+              {DR_CLASSES.map((cls) => (
+                <tr key={cls}>
+                  <td className="pr-3 py-0.5">{cls}</td>
+                  <td className="py-0.5 tabular-nums">
+                    {((prediction.probabilities[cls] ?? 0) * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-xs text-gray-600 mt-2">
+            Model version: {prediction.modelVersion} · Processing time: {prediction.processingTimeMs}ms
+          </p>
+        </>
+      ) : (
+        <p className="text-sm mt-1">No trained model was connected when this image was analyzed.</p>
+      )}
+
+      <h2 className="text-sm font-semibold mt-5">Image quality</h2>
+      <p className="text-sm mt-1">
+        {quality.passed ? "Passed" : (quality.message ?? "Quality issue detected")}
+      </p>
+
+      <h2 className="text-sm font-semibold mt-5">Image information</h2>
+      <p className="text-xs text-gray-600 mt-1">
+        {record.width} × {record.height}px
+        {record.backend && ` · cropped to ${record.backend.croppedWidth} × ${record.backend.croppedHeight}px for analysis`}
+      </p>
+
+      <p className="text-[10px] text-gray-500 mt-6 pt-3 border-t border-gray-300 leading-relaxed">
+        RetinaAI is an educational and research prototype. It is not a
+        medical device and should not be used to diagnose, treat, or make
+        clinical decisions about any person. Model predictions may be
+        incorrect, and performance may differ across populations, cameras,
+        image quality, and clinical settings. A Grad-CAM heatmap, when
+        shown, highlights regions that influenced the model's prediction —
+        it does not prove those regions contain disease.
+      </p>
+    </div>
+  );
+}

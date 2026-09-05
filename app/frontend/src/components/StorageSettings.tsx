@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
+import { useToast } from "../hooks/useToast";
 import {
   clearAllAnalyses,
   clearCachedPreviews,
@@ -8,7 +8,7 @@ import SettingsSegmented from "./SettingsSegmented";
 
 export default function StorageSettings() {
   const { preferences, setPreference } = usePreferences();
-  const [message, setMessage] = useState<string | null>(null);
+  const toast = useToast();
 
   const runAction = async (
     label: string,
@@ -17,7 +17,7 @@ export default function StorageSettings() {
     const confirmed = window.confirm(`${label}? This cannot be undone.`);
     if (!confirmed) return;
     const result = await action();
-    setMessage(
+    toast.success(
       typeof result === "number"
         ? `Removed ${result} analys${result === 1 ? "is" : "es"}.`
         : "Done.",
@@ -76,12 +76,6 @@ export default function StorageSettings() {
           Clear all local data
         </button>
       </div>
-
-      {message && (
-        <p role="status" className="mt-3 text-xs text-ok-soft-ink">
-          {message}
-        </p>
-      )}
     </div>
   );
 }

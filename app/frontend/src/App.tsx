@@ -8,6 +8,19 @@ import ShortcutHelpModal from "./components/ShortcutHelpModal";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePreferences } from "./hooks/usePreferences";
 import { useModelStatus } from "./hooks/useStatus";
+import { Icon, StatusDot } from "./components/ui";
+
+/**
+ * Routes that take over the full viewport instead of sitting in a centred
+ * reading column. These are the ones where the fundus image is the subject:
+ * constraining them to a text measure wastes exactly the space the image
+ * wants, and puts the analysis panel below the fold.
+ */
+const WORKSPACE_ROUTES = [/^\/analysis\/[^/]+$/, /^\/analyze$/, /^\/$/];
+
+function isWorkspaceRoute(pathname: string): boolean {
+  return WORKSPACE_ROUTES.some((re) => re.test(pathname));
+}
 
 function App() {
   const { preferences, setPreference } = usePreferences();
@@ -20,8 +33,10 @@ function App() {
   const onHelp = useCallback(() => setHelpOpen((v) => !v), []);
   useKeyboardShortcuts(onHelp);
 
+  const workspace = isWorkspaceRoute(location.pathname);
+
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden bg-canvas">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:text-clinic-900 focus:px-3 focus:py-2 focus:rounded-md focus:shadow-lg"
@@ -32,84 +47,119 @@ function App() {
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="border-b border-clinic-200 bg-surface">
-          <div className="flex items-center gap-3 h-14 px-4 sm:px-6">
+        {/* Instrument chrome. The rail and this bar share one dark band
+            regardless of theme, the way an imaging workstation keeps its
+            controls visually separate from the image being read. */}
+        <header className="shrink-0 bg-chrome-900 border-b border-chrome-700">
+          <div className="flex items-center gap-3 h-12 px-3 sm:px-4">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation"
-              className="lg:hidden -ml-1 p-1.5 rounded-md text-clinic-600 hover:bg-clinic-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              className="lg:hidden -ml-1 p-1.5 rounded-md text-chrome-300 hover:text-white hover:bg-chrome-700/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
-              </svg>
+              <Icon name="menu" className="w-5 h-5" />
             </button>
 
             <Breadcrumbs />
 
             <div className="flex-1" />
 
+            {/* The disclaimer stays on every page, as it must — moved inline
+                so it costs a chip rather than a full strip, and reads as part
+                of the instrument rather than a dismissible cookie bar. */}
+            <NavLink
+              to="/about"
+              className="hidden md:inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium text-warn-soft-ink bg-warn-soft/90 hover:bg-warn-soft transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              title="This is a research prototype, not a medical device. Read the full disclaimer."
+            >
+              <Icon name="alert" className="w-3.5 h-3.5" />
+              Research prototype — not a medical device
+            </NavLink>
+
             <button
               type="button"
               onClick={commandPalette.open}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs text-clinic-500 hover:text-clinic-800 transition-colors px-2 py-1 rounded-md border border-clinic-200 hover:bg-clinic-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              className="hidden sm:inline-flex items-center gap-2 rounded-md border border-chrome-700 bg-chrome-800 px-2 py-1 text-xs text-chrome-300 hover:text-white hover:border-chrome-700 hover:bg-chrome-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
               <span>Search</span>
-              <span className="font-mono text-[10px] text-clinic-400">⌘K</span>
+              <span className="font-mono text-[10px] text-chrome-300/70">⌘K</span>
             </button>
 
-            {preferences.researchMode && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-accent-soft-ink bg-accent-soft px-2 py-1 rounded">
-                RESEARCH MODE
-              </span>
-            )}
             <button
               type="button"
               onClick={() => setPreference("researchMode", !preferences.researchMode)}
-              className="text-xs text-clinic-500 hover:text-clinic-800 transition-colors px-2 py-1 rounded-md hover:bg-clinic-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              className={`hidden sm:inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+                preferences.researchMode
+                  ? "bg-accent-600/20 text-accent-400"
+                  : "text-chrome-300 hover:text-white hover:bg-chrome-700/60"
+              }`}
               aria-pressed={preferences.researchMode}
+              title={
+                preferences.researchMode
+                  ? "Research mode is on — advanced metrics and evaluation pages are visible"
+                  : "Turn on research mode to show evaluation metrics and training pages"
+              }
             >
-              {preferences.researchMode ? "Exit research mode" : "Research mode"}
+              <StatusDot tone={preferences.researchMode ? "accent" : "neutral"} />
+              Research
             </button>
           </div>
-          <div className="bg-warn-soft border-t border-warn-500/30">
-            <p className="px-4 sm:px-6 py-1 text-xs text-warn-soft-ink text-center">
-              Research prototype — not a medical device.{" "}
-              <NavLink to="/about" className="underline font-medium">
-                Read the full disclaimer
-              </NavLink>
-              .
-            </p>
-          </div>
-        </div>
 
-        <main id="main-content" className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
-          <div key={location.pathname} style={{ animation: "page-fade-in 0.15s ease-out" }}>
-            <Outlet />
-          </div>
-        </main>
+          {/* Compact form of the disclaimer for narrow screens, where the
+              inline chip above is hidden. */}
+          <NavLink
+            to="/about"
+            className="md:hidden block bg-warn-soft px-4 py-1 text-center text-[11px] text-warn-soft-ink"
+          >
+            Research prototype — not a medical device.
+          </NavLink>
+        </header>
 
-        <footer className="border-t border-clinic-200 bg-surface">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-xs text-clinic-500 flex flex-col sm:flex-row gap-2 sm:justify-between">
-            <span>RetinaAI — educational &amp; research prototype.</span>
-            <div className="flex items-center gap-4">
-              <span>All analysis data stays on this device.</span>
-              {preferences.showLocalProcessingIndicator && (
-                <span className="inline-flex items-center gap-1.5">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      backendReachable ? "bg-ok-500" : "bg-clinic-400"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  {backendReachable
-                    ? "Processing locally (backend on this device)"
-                    : "Backend unreachable"}
-                </span>
-              )}
+        <main
+          id="main-content"
+          className={
+            workspace
+              ? "flex-1 min-h-0 overflow-hidden"
+              : "flex-1 min-h-0 overflow-y-auto panel-scroll"
+          }
+        >
+          {workspace ? (
+            <div
+              key={location.pathname}
+              className="h-full"
+              style={{ animation: "page-fade-in 0.15s ease-out" }}
+            >
+              <Outlet />
             </div>
-          </div>
-        </footer>
+          ) : (
+            <div className="flex min-h-full flex-col">
+              <div
+                key={location.pathname}
+                className="w-full flex-1 mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl"
+                style={{ animation: "page-fade-in 0.15s ease-out" }}
+              >
+                <Outlet />
+              </div>
+              <footer className="border-t border-clinic-200 bg-surface">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-xs text-clinic-500 flex flex-col sm:flex-row gap-2 sm:justify-between">
+                  <span>RetinaAI — educational &amp; research prototype.</span>
+                  <div className="flex items-center gap-4">
+                    <span>All analysis data stays on this device.</span>
+                    {preferences.showLocalProcessingIndicator && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <StatusDot tone={backendReachable ? "ok" : "neutral"} />
+                        {backendReachable
+                          ? "Processing locally (backend on this device)"
+                          : "Backend unreachable"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </footer>
+            </div>
+          )}
+        </main>
       </div>
 
       <CommandPalette />

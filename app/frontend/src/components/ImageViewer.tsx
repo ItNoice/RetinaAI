@@ -2,8 +2,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
 import { useShortcutListener } from "../hooks/useShortcutListener";
 import { enhanceImage } from "../lib/imageEnhance";
+import { Icon, type IconName } from "./ui";
 
-type ViewMode = "original" | "heatmap" | "overlay";
+/**
+ * View modes, all backed by real artifacts:
+ *
+ * - `original`  the untouched upload
+ * - `analyzed`  the exact 224x224 crop the model received (cropped_preview)
+ * - `heatmap`   the Grad-CAM alone
+ * - `overlay`   Grad-CAM composited over the analyzed frame at chosen opacity
+ *
+ * There is deliberately no "segmentation" mode: the backend produces no masks
+ * or region boundaries, and a mode that looked like segmentation but rendered
+ * class-activation attention would misrepresent what the model outputs.
+ */
+type ViewMode = "original" | "analyzed" | "heatmap" | "overlay";
 
 export interface ViewerTransform {
   scale: number;
@@ -20,6 +33,11 @@ interface ImageViewerProps {
   croppedPreviewUrl?: string | null;
   heatmapUrl?: string | null;
   altText: string;
+  /** Fills the parent instead of using a fixed stage height. Used by the
+   *  analysis workspace, where the viewer owns the full column. */
+  fill?: boolean;
+  /** Optional caption rendered in the status strip (e.g. the filename). */
+  caption?: string;
   // When provided, zoom/pan/rotation are controlled externally (used by
   // Compare's synchronized detailed view — two viewers sharing one
   // transform). Global keyboard shortcuts (F/H/R/+/-) are only wired up in
@@ -37,20 +55,38 @@ const MAX_SCALE = 6;
 const ZOOM_STEP = 0.5;
 const DEFAULT_TRANSFORM: ViewerTransform = { scale: MIN_SCALE, offset: { x: 0, y: 0 }, rotation: 0 };
 
+const MODE_LABELS: Record<ViewMode, string> = {
+  original: "Original",
+  analyzed: "Analyzed frame",
+  heatmap: "Grad-CAM",
+  overlay: "Overlay",
+};
+
+const MODE_HINTS: Record<ViewMode, string> = {
+  original: "The image exactly as uploaded",
+  analyzed: "The cropped, resized frame the model actually received",
+  heatmap: "Grad-CAM attention alone, aligned to the analyzed frame",
+  overlay: "Grad-CAM composited over the analyzed frame",
+};
+
 export default function ImageViewer({
   imageUrl,
   croppedPreviewUrl,
   heatmapUrl,
   altText,
+  fill = false,
+  caption,
   controlled,
 }: ImageViewerProps) {
   const { preferences, setPreference } = usePreferences();
   const heatmapAvailable = Boolean(heatmapUrl);
+  const analyzedAvailable = Boolean(croppedPreviewUrl);
 
   const [viewMode, setViewMode] = useState<ViewMode>(preferences.defaultViewMode);
   const [overlayOpacity, setOverlayOpacity] = useState(preferences.defaultHeatmapOpacity);
   const [brightness, setBrightness] = useState(preferences.defaultBrightness);
   const [contrast, setContrast] = useState(preferences.defaultContrast);
+  const [adjustOpen, setAdjustOpen] = useState(false);
 
   const [internalTransform, setInternalTransform] = useState<ViewerTransform>(() =>
     preferences.rememberZoom
@@ -201,8 +237,8 @@ export default function ImageViewer({
     updateTransform({ scale: Math.max(MIN_SCALE, Math.min(MAX_SCALE, ratio)) });
   };
 
-  const showHeatmapLayer = viewMode !== "original" && heatmapAvailable;
-  // Heatmap/overlay modes must show the cropped preview, not the raw
+  const showHeatmapLayer = (viewMode === "heatmap" || viewMode === "overlay") && heatmapAvailable;
+  // Every mode except "original" must show the cropped preview, not the raw
   // upload — see the prop comment above.
   const baseImageUrl =
     viewMode !== "original" && croppedPreviewUrl ? croppedPreviewUrl : imageUrl;
@@ -230,16 +266,32 @@ export default function ImageViewer({
 
   const displayedImageUrl = enhancedUrl ?? baseImageUrl;
 
+  const availableModes: ViewMode[] = [
+    "original",
+    ...(analyzedAvailable ? (["analyzed"] as ViewMode[]) : []),
+    ...(heatmapAvailable ? (["heatmap", "overlay"] as ViewMode[]) : []),
+  ];
+  const isDerived = viewMode !== "original";
+  const isAiGenerated = viewMode === "heatmap" || viewMode === "overlay";
+
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-lg border border-chrome-700 bg-chrome-950 overflow-hidden ${
-        isFullscreen ? "flex flex-col" : ""
+      className={`relative flex flex-col overflow-hidden bg-chrome-950 ${
+        fill && !isFullscreen
+          ? "h-full"
+          : isFullscreen
+            ? "h-screen"
+            : "rounded-lg border border-chrome-700"
       }`}
     >
+      {/* Stage --------------------------------------------------------- */}
       <div
-        className="relative overflow-hidden select-none touch-none"
-        style={{ height: isFullscreen ? "calc(100vh - 3.25rem)" : "28rem", cursor: scale > 1 ? (isPanning ? "grabbing" : "grab") : "default" }}
+        className="relative flex-1 min-h-0 overflow-hidden select-none touch-none"
+        style={{
+          height: fill || isFullscreen ? undefined : "28rem",
+          cursor: scale > 1 ? (isPanning ? "grabbing" : "grab") : "default",
+        }}
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -267,163 +319,245 @@ export default function ImageViewer({
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-150"
               style={{ opacity: viewMode === "heatmap" ? 1 : overlayOpacity }}
             />
           )}
         </div>
 
-        {!heatmapAvailable && viewMode !== "original" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-chrome-950/80 text-chrome-300 text-sm px-6 text-center">
-            No Grad-CAM heatmap is available for this image.
+        {/* What am I looking at? A persistent, unmissable label whenever the
+            frame is anything other than the untouched upload. */}
+        {isDerived && (
+          <div
+            className="absolute top-3 left-3 flex items-center gap-1.5 rounded bg-chrome-950/85 px-2 py-1 text-[11px] font-medium text-chrome-200 backdrop-blur-sm"
+            style={{ animation: "panel-in 0.15s ease-out" }}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${isAiGenerated ? "bg-accent-400" : "bg-chrome-300"}`}
+              aria-hidden="true"
+            />
+            {isAiGenerated ? "AI-generated visualization" : "Analyzed frame"}
+            <span className="text-chrome-300/70">· {MODE_LABELS[viewMode]}</span>
           </div>
         )}
 
         {preferences.autoEnhance && (
-          <span className="absolute top-2 left-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-chrome-900/80 text-chrome-300">
+          <span className="absolute top-3 right-3 rounded bg-chrome-950/85 px-2 py-1 text-[10px] font-medium text-chrome-300 backdrop-blur-sm">
             Auto-enhanced (display only)
+          </span>
+        )}
+
+        {/* Zoom readout, bottom-left, out of the way of the fundus circle. */}
+        {scale > 1 && (
+          <span
+            className="absolute bottom-3 left-3 rounded bg-chrome-950/85 px-2 py-1 text-[11px] text-chrome-300 metric backdrop-blur-sm"
+            aria-live="polite"
+          >
+            {Math.round(scale * 100)}%
           </span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 bg-chrome-900 px-3 py-2.5 border-t border-chrome-700">
-        <div className="flex items-center gap-1" role="group" aria-label="Zoom controls">
-          <ViewerButton onClick={zoomOut} label="Zoom out" disabled={scale <= MIN_SCALE} showLabel={preferences.alwaysShowIconLabels}>
-            −
-          </ViewerButton>
-          <span className="text-xs text-chrome-300 tabular w-12 text-center" aria-live="polite">
-            {Math.round(scale * 100)}%
-          </span>
-          <ViewerButton onClick={zoomIn} label="Zoom in" disabled={scale >= MAX_SCALE} showLabel={preferences.alwaysShowIconLabels}>
-            +
-          </ViewerButton>
-          <ViewerButton onClick={fit} label="Fit to screen">
-            Fit
-          </ViewerButton>
-          <ViewerButton onClick={reset} label="Reset zoom, pan, rotation & adjustments">
-            Reset
-          </ViewerButton>
-          <ViewerButton onClick={rotate} label="Rotate 90°">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 3.5A6.5 6.5 0 106.5 10M13 3.5V7M13 3.5H9.5" />
-            </svg>
-          </ViewerButton>
-        </div>
+      {/* Adjustments popover ------------------------------------------- */}
+      {adjustOpen && (
+        <div
+          className="absolute bottom-12 right-3 z-10 w-60 rounded-lg border border-chrome-700 bg-chrome-900 p-3 shadow-lg"
+          style={{ animation: "panel-in 0.12s ease-out" }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-chrome-300/70">
+              Display adjustments
+            </p>
+            <button
+              type="button"
+              onClick={() => setAdjustOpen(false)}
+              aria-label="Close adjustments"
+              className="rounded p-0.5 text-chrome-300 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              <Icon name="close" className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-        <div className="h-4 w-px bg-chrome-700" aria-hidden="true" />
-
-        <div className="flex items-center gap-2">
-          <label htmlFor="brightness" className="text-xs text-chrome-300">
-            Brightness
-          </label>
-          <input
+          <Slider
             id="brightness"
-            type="range"
-            min={0.5}
-            max={1.5}
-            step={0.05}
+            label="Brightness"
             value={brightness}
-            onChange={(e) => setBrightness(Number(e.target.value))}
-            className="w-16 accent-accent-500"
-          />
-          <label htmlFor="contrast" className="text-xs text-chrome-300">
-            Contrast
-          </label>
-          <input
-            id="contrast"
-            type="range"
             min={0.5}
             max={1.5}
             step={0.05}
-            value={contrast}
-            onChange={(e) => setContrast(Number(e.target.value))}
-            className="w-16 accent-accent-500"
+            onChange={setBrightness}
+            format={(v) => `${Math.round(v * 100)}%`}
           />
+          <Slider
+            id="contrast"
+            label="Contrast"
+            value={contrast}
+            min={0.5}
+            max={1.5}
+            step={0.05}
+            onChange={setContrast}
+            format={(v) => `${Math.round(v * 100)}%`}
+          />
+          {viewMode === "overlay" && (
+            <Slider
+              id="overlay-opacity"
+              label="Overlay opacity"
+              value={overlayOpacity}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={setOverlayOpacity}
+              format={(v) => `${Math.round(v * 100)}%`}
+            />
+          )}
+          <p className="mt-2.5 border-t border-chrome-700 pt-2 text-[10px] leading-relaxed text-chrome-300/70">
+            Display only — adjustments never affect the image sent to the model.
+          </p>
+        </div>
+      )}
+
+      {/* Toolbar ------------------------------------------------------- */}
+      <div className="shrink-0 flex items-center gap-1.5 border-t border-chrome-700 bg-chrome-900 px-2 h-11">
+        <div className="flex items-center gap-0.5" role="group" aria-label="Zoom and orientation">
+          <ToolButton icon="zoom-out" label="Zoom out" onClick={zoomOut} disabled={scale <= MIN_SCALE} />
+          <ToolButton icon="zoom-in" label="Zoom in" onClick={zoomIn} disabled={scale >= MAX_SCALE} />
+          <ToolButton icon="fit" label="Fit to screen" onClick={fit} />
+          <ToolButton icon="rotate" label="Rotate 90°" onClick={rotate} />
+          <ToolButton icon="reset" label="Reset view and adjustments" onClick={reset} />
         </div>
 
-        <div className="h-4 w-px bg-chrome-700" aria-hidden="true" />
+        <div className="h-5 w-px bg-chrome-700" aria-hidden="true" />
 
+        {/* View modes. Only the modes with real artifacts behind them are
+            offered — no disabled ghosts for things this image never had. */}
         <div
           role="group"
           aria-label="Image view mode"
-          className="flex items-center rounded-md bg-chrome-800 p-0.5 text-xs"
+          className="flex items-center rounded-md bg-chrome-800 p-0.5 text-xs min-w-0 overflow-x-auto panel-scroll"
         >
-          {(["original", "heatmap", "overlay"] as ViewMode[]).map((mode) => (
+          {availableModes.map((mode) => (
             <button
               key={mode}
               type="button"
-              disabled={mode !== "original" && !heatmapAvailable}
               aria-pressed={viewMode === mode}
               onClick={() => setViewMode(mode)}
-              className={`px-2.5 py-1 rounded capitalize transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              title={MODE_HINTS[mode]}
+              className={`whitespace-nowrap rounded px-2.5 py-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
                 viewMode === mode
                   ? "bg-accent-600 text-white"
                   : "text-chrome-300 hover:text-white"
               }`}
-              title={
-                mode !== "original" && !heatmapAvailable
-                  ? "No Grad-CAM heatmap is available for this image (no model was loaded when it was analyzed)"
-                  : undefined
-              }
             >
-              {mode}
+              {MODE_LABELS[mode]}
             </button>
           ))}
         </div>
 
-        {viewMode === "overlay" && (
-          <div className="flex items-center gap-2">
-            <label htmlFor="overlay-opacity" className="text-xs text-chrome-300">
-              Opacity
-            </label>
-            <input
-              id="overlay-opacity"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={overlayOpacity}
-              disabled={!heatmapAvailable}
-              onChange={(e) => setOverlayOpacity(Number(e.target.value))}
-              className="w-24 accent-accent-500"
-            />
-          </div>
+        {!heatmapAvailable && (
+          <span className="hidden lg:inline text-[11px] text-chrome-300/60" title="No model was loaded when this image was analyzed, so no Grad-CAM exists for it.">
+            No Grad-CAM
+          </span>
         )}
 
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0" />
 
-        <ViewerButton onClick={() => void toggleFullscreen()} label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
-          {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-        </ViewerButton>
+        {/* Only in fullscreen, where the workspace header that normally
+            carries the filename is hidden. */}
+        {caption && isFullscreen && (
+          <span className="hidden sm:block truncate max-w-[20rem] text-[11px] text-chrome-300/70" title={caption}>
+            {caption}
+          </span>
+        )}
+
+        <ToolButton
+          icon="brightness"
+          label="Display adjustments"
+          onClick={() => setAdjustOpen((v) => !v)}
+          active={adjustOpen}
+          expanded={adjustOpen}
+        />
+        <ToolButton
+          icon={isFullscreen ? "fullscreen-exit" : "fullscreen"}
+          label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          onClick={() => void toggleFullscreen()}
+        />
       </div>
     </div>
   );
 }
 
-function ViewerButton({
-  onClick,
+function ToolButton({
+  icon,
   label,
+  onClick,
   disabled,
-  showLabel,
-  children,
+  active,
+  expanded,
 }: {
-  onClick: () => void;
+  icon: IconName;
   label: string;
+  onClick: () => void;
   disabled?: boolean;
-  showLabel?: boolean;
-  children: React.ReactNode;
+  active?: boolean;
+  expanded?: boolean;
 }) {
+  const { preferences } = usePreferences();
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      aria-pressed={active}
+      aria-expanded={expanded}
       title={label}
-      className="min-w-[1.75rem] h-7 px-2 rounded text-xs font-medium text-chrome-200 bg-chrome-800 hover:bg-chrome-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 transition-colors inline-flex items-center gap-1"
+      className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs font-medium transition-colors disabled:opacity-35 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+        active ? "bg-chrome-700 text-white" : "text-chrome-200 hover:bg-chrome-700 hover:text-white"
+      }`}
     >
-      {children}
-      {showLabel && <span className="normal-case">{label}</span>}
+      <Icon name={icon} className="w-4 h-4" />
+      {preferences.alwaysShowIconLabels && <span>{label}</span>}
     </button>
+  );
+}
+
+function Slider({
+  id,
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  format,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  format: (v: number) => string;
+}) {
+  return (
+    <div className="mt-2.5">
+      <div className="flex items-center justify-between">
+        <label htmlFor={id} className="text-xs text-chrome-300">
+          {label}
+        </label>
+        <span className="text-[11px] text-chrome-300/70 metric">{format(value)}</span>
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="mt-1 w-full accent-accent-500"
+      />
+    </div>
   );
 }

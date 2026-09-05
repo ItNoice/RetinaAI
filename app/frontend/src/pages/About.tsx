@@ -4,7 +4,7 @@ export default function About() {
   return (
     <div className="max-w-3xl space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-clinic-900">
+        <h1 className="text-xl font-semibold tracking-tight text-clinic-900">
           About &amp; safety
         </h1>
       </div>

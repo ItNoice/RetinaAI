@@ -4,6 +4,7 @@ import { deleteAnalysis, listAnalyses, updateAnalysis } from "../lib/storage";
 import { DR_CLASSES, type AnalysisRecord, type DRClass } from "../lib/types";
 import AnalysisThumbnail from "../components/AnalysisThumbnail";
 import { useToast } from "../hooks/useToast";
+import AnalysisStatusBadge from "../components/AnalysisStatusBadge";
 
 type SortKey = "newest" | "oldest" | "confidence" | "class";
 type ViewMode = "grid" | "table";
@@ -13,28 +14,6 @@ function formatDate(ts: number) {
     dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-function StatusBadge({ record }: { record: AnalysisRecord }) {
-  if (!record.quality.passed) {
-    return (
-      <span className="inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 rounded bg-danger-soft text-danger-soft-ink">
-        Quality issue
-      </span>
-    );
-  }
-  if (record.prediction) {
-    return (
-      <span className="inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 rounded bg-ok-soft text-ok-soft-ink">
-        Analyzed
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 rounded bg-clinic-100 text-clinic-500">
-      Model unavailable
-    </span>
-  );
 }
 
 export default function History() {
@@ -118,7 +97,7 @@ export default function History() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-clinic-900">
+          <h1 className="text-xl font-semibold tracking-tight text-clinic-900">
             History
           </h1>
           <p className="mt-2 max-w-2xl text-clinic-600 leading-relaxed">
@@ -265,7 +244,7 @@ export default function History() {
                     )}
                     <p className="text-xs text-clinic-500 mt-0.5">{formatDate(r.createdAt)}</p>
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <StatusBadge record={r} />
+                      <AnalysisStatusBadge record={r} />
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           type="button"
@@ -376,7 +355,7 @@ export default function History() {
                           {formatDate(r.createdAt)}
                         </td>
                         <td className="p-3">
-                          <StatusBadge record={r} />
+                          <AnalysisStatusBadge record={r} />
                         </td>
                         <td className="p-3 text-clinic-800">
                           {r.prediction?.predictedClass ?? "—"}

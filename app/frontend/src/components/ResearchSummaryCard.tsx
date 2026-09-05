@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { usePreferences } from "../hooks/usePreferences";
 import { useMetrics, useTrainingLog } from "../hooks/useStatus";
 
 // A calm, real-data-only summary for the Overview page — deliberately not a
@@ -6,13 +7,14 @@ import { useMetrics, useTrainingLog } from "../hooks/useStatus";
 // Experiments.tsx already use, so it can never show a number those pages
 // disagree with, and reports "not yet run" honestly rather than a zero.
 export default function ResearchSummaryCard() {
+  const { preferences } = usePreferences();
   const { metrics, loading: metricsLoading } = useMetrics();
   const { trainingLog, loading: logLoading } = useTrainingLog();
 
   const test = metrics.test;
 
   return (
-    <div className="rounded-lg border border-clinic-200 bg-surface p-5">
+    <div className="rounded-lg border border-clinic-200 bg-surface p-4">
       <h3 className="text-sm font-semibold text-clinic-900 mb-3">
         Research activity
       </h3>
@@ -22,13 +24,13 @@ export default function ResearchSummaryCard() {
           <div className="flex justify-between gap-3">
             <dt className="text-clinic-500">Test accuracy</dt>
             <dd className="text-clinic-800 tabular">
-              {(test.accuracy * 100).toFixed(1)}%
+              {(test.accuracy * 100).toFixed(preferences.decimalPlaces)}%
             </dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-clinic-500">Test F1 (macro)</dt>
             <dd className="text-clinic-800 tabular">
-              {(test.f1Macro * 100).toFixed(1)}%
+              {(test.f1Macro * 100).toFixed(preferences.decimalPlaces)}%
             </dd>
           </div>
         </dl>
@@ -44,7 +46,7 @@ export default function ResearchSummaryCard() {
             Last training run: {trainingLog.history.length} epochs, best
             validation accuracy{" "}
             {trainingLog.bestValAcc !== null
-              ? `${(trainingLog.bestValAcc * 100).toFixed(1)}%`
+              ? `${(trainingLog.bestValAcc * 100).toFixed(preferences.decimalPlaces)}%`
               : "—"}
             .
           </p>

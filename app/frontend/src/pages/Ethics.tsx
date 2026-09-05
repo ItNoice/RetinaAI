@@ -4,7 +4,7 @@ export default function Ethics() {
   return (
     <div className="max-w-3xl space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-clinic-900">
+        <h1 className="text-xl font-semibold tracking-tight text-clinic-900">
           Ethics
         </h1>
         <p className="mt-2 text-clinic-600 leading-relaxed">

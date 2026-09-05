@@ -5,7 +5,7 @@ export default function ModelStatusCard() {
   const { available } = status;
 
   return (
-    <div className="rounded-lg border border-clinic-200 bg-surface p-5">
+    <div className="rounded-lg border border-clinic-200 bg-surface p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-clinic-900">
           Model status

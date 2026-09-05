@@ -22,19 +22,17 @@ export default function CommandPalette() {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const go = (path: string) => () => navigate(path);
-
   const commands: Command[] = useMemo(
     () => [
-      { id: "nav-overview", label: "Open Overview", group: "Navigate", action: go("/") },
-      { id: "nav-analyze", label: "Analyze image", group: "Navigate", keywords: "upload", action: go("/analyze") },
-      { id: "nav-history", label: "Open History", group: "Navigate", action: go("/history") },
-      { id: "nav-compare", label: "Compare images", group: "Navigate", action: go("/compare") },
-      { id: "nav-research", label: "Open Research", group: "Navigate", action: go("/research") },
-      { id: "nav-experiments", label: "Open Experiments", group: "Navigate", action: go("/experiments") },
-      { id: "nav-knowledge", label: "Open Knowledge", group: "Navigate", action: go("/knowledge") },
-      { id: "nav-model-lab", label: "Open Model Lab", group: "Navigate", action: go("/model-lab") },
-      { id: "nav-settings", label: "Open Settings", group: "Navigate", action: go("/settings") },
+      { id: "nav-overview", label: "Open Overview", group: "Navigate", action: () => navigate("/") },
+      { id: "nav-analyze", label: "Analyze image", group: "Navigate", keywords: "upload", action: () => navigate("/analyze") },
+      { id: "nav-history", label: "Open History", group: "Navigate", action: () => navigate("/history") },
+      { id: "nav-compare", label: "Compare images", group: "Navigate", action: () => navigate("/compare") },
+      { id: "nav-research", label: "Open Research", group: "Navigate", action: () => navigate("/research") },
+      { id: "nav-experiments", label: "Open Experiments", group: "Navigate", action: () => navigate("/experiments") },
+      { id: "nav-knowledge", label: "Open Knowledge", group: "Navigate", action: () => navigate("/knowledge") },
+      { id: "nav-model-lab", label: "Open Model Lab", group: "Navigate", action: () => navigate("/model-lab") },
+      { id: "nav-settings", label: "Open Settings", group: "Navigate", action: () => navigate("/settings") },
       {
         id: "toggle-research-mode",
         label: preferences.researchMode ? "Turn off Research Mode" : "Turn on Research Mode",
@@ -45,7 +43,7 @@ export default function CommandPalette() {
       { id: "theme-dark", label: "Change theme: Dark", group: "Actions", keywords: "appearance", action: () => setTheme("dark") },
       { id: "theme-system", label: "Change theme: System", group: "Actions", keywords: "appearance", action: () => setTheme("system") },
     ],
-    [preferences.researchMode, setPreference, setTheme],
+    [preferences.researchMode, setPreference, setTheme, navigate],
   );
 
   const filtered = useMemo(() => {

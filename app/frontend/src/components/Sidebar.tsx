@@ -1,181 +1,117 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { usePreferences } from "../hooks/usePreferences";
 import { useModelStatus } from "../hooks/useStatus";
+import { Icon, StatusDot, type IconName } from "./ui";
 
 interface NavItem {
   to: string;
   label: string;
-  icon: React.ReactNode;
+  icon: IconName;
+  /** Shown as a tooltip and read by assistive tech — the labels alone are
+   *  terse, and several of these pages aren't self-explanatory. */
+  hint?: string;
 }
 
-const ICON_PROPS = {
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.5,
-  "aria-hidden": true,
-  className: "w-[18px] h-[18px] shrink-0",
-} as const;
-
-const PRIMARY_ITEMS: NavItem[] = [
-  {
-    to: "/",
-    label: "Overview",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10.5L12 3l9 7.5M5 9v10.5a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9" />
-      </svg>
-    ),
-  },
-  {
-    to: "/analyze",
-    label: "Analyze",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 8.25L12 3.75m0 0L7.5 8.25M12 3.75v13.5" />
-      </svg>
-    ),
-  },
-  {
-    to: "/history",
-    label: "History",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
-    to: "/compare",
-    label: "Compare",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 4v16M16 4v16M4 9h4m8 0h4M4 15h4m8 0h4" />
-      </svg>
-    ),
-  },
+/**
+ * Navigation is deliberately shallow: three destinations that are part of
+ * reading an image, and everything else folded away.
+ *
+ * The app has fourteen routes. Listing all of them flat, as it did, made the
+ * workspace look like one item in a documentation site. Nothing has been
+ * removed — Research and Reference are still one click away, they just no
+ * longer compete with the thing the app is for.
+ */
+const WORKSPACE_ITEMS: NavItem[] = [
+  { to: "/", label: "Overview", icon: "overview", hint: "Workflow and recent activity" },
+  { to: "/analyze", label: "Analyze", icon: "scan", hint: "Load a fundus image and run the model" },
+  { to: "/history", label: "History", icon: "history", hint: "Previously analyzed images" },
+  { to: "/compare", label: "Compare", icon: "compare", hint: "View analyses side by side" },
 ];
 
 const RESEARCH_ITEMS: NavItem[] = [
-  {
-    to: "/research",
-    label: "Research",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M8 17V10m5 7V6m5 11v-4" />
-      </svg>
-    ),
-  },
-  {
-    to: "/experiments",
-    label: "Experiments",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3h6M10 3v5.5L5.5 17a2 2 0 001.8 3h9.4a2 2 0 001.8-3L14 8.5V3" />
-      </svg>
-    ),
-  },
+  { to: "/research", label: "Evaluation", icon: "research", hint: "Held-out accuracy, F1, confusion matrix" },
+  { to: "/experiments", label: "Training", icon: "experiments", hint: "Per-epoch training log" },
+  { to: "/model-lab", label: "Model", icon: "model", hint: "Checkpoint and dataset provenance" },
 ];
-
-const KNOWLEDGE_ITEM: NavItem = {
-  to: "/knowledge",
-  label: "Knowledge",
-  icon: (
-    <svg {...ICON_PROPS}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.5c-1.5-1.5-4-2-6.5-1.5v13c2.5-.5 5 0 6.5 1.5m0-13c1.5-1.5 4-2 6.5-1.5v13c-2.5-.5-5 0-6.5 1.5m0-13v13" />
-    </svg>
-  ),
-};
-
-const SETTINGS_ITEM: NavItem = {
-  to: "/settings",
-  label: "Settings",
-  icon: (
-    <svg {...ICON_PROPS}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
-};
 
 const REFERENCE_ITEMS: NavItem[] = [
-  {
-    to: "/model-lab",
-    label: "Model Lab",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v5.379a1 1 0 01-.293.707l-4.414 4.414A2 2 0 005.707 17h12.586a2 2 0 001.414-3.5l-4.414-4.414A1 1 0 0115 8.379V3M8 3h8" />
-      </svg>
-    ),
-  },
-  {
-    to: "/methods",
-    label: "Methods",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5a8.38 8.38 0 013 6.5c0 4.5-3 7.5-3 7.5s-3-3-3-7.5a8.38 8.38 0 013-6.5z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.5v.01" />
-      </svg>
-    ),
-  },
-  {
-    to: "/ethics",
-    label: "Ethics",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-      </svg>
-    ),
-  },
-  {
-    to: "/about",
-    label: "About & Safety",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-        />
-      </svg>
-    ),
-  },
+  { to: "/knowledge", label: "Knowledge", icon: "knowledge", hint: "Retinal anatomy and DR grading" },
+  { to: "/methods", label: "Methods", icon: "methods", hint: "How the pipeline works" },
+  { to: "/ethics", label: "Ethics", icon: "ethics", hint: "Research-integrity principles" },
+  { to: "/about", label: "About & Safety", icon: "about", hint: "What this tool is and isn't for" },
 ];
 
-function itemClass({ isActive }: { isActive: boolean }) {
-  return `flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+function linkClass({ isActive }: { isActive: boolean }) {
+  return [
+    "group relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-1 focus-visible:ring-offset-chrome-900",
     isActive
-      ? "bg-accent-soft text-accent-soft-ink"
-      : "text-chrome-300 hover:text-white hover:bg-chrome-700/60"
-  }`;
+      ? "bg-chrome-700/70 text-white font-medium"
+      : "text-chrome-300 hover:text-white hover:bg-chrome-700/40",
+  ].join(" ");
 }
 
-function referenceItemClass({ isActive }: { isActive: boolean }) {
-  return `flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
-    isActive
-      ? "bg-accent-soft text-accent-soft-ink"
-      : "text-chrome-300/80 hover:text-white hover:bg-chrome-700/60"
-  }`;
-}
-
-function SidebarLink({
-  item,
-  onNavigate,
-  className,
-}: {
-  item: NavItem;
-  onNavigate: () => void;
-  className: (props: { isActive: boolean }) => string;
-}) {
+function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
   return (
-    <NavLink to={item.to} end={item.to === "/"} className={className} onClick={onNavigate}>
-      {item.icon}
-      <span>{item.label}</span>
+    <NavLink
+      to={item.to}
+      end={item.to === "/"}
+      className={linkClass}
+      onClick={onNavigate}
+      title={item.hint}
+    >
+      {({ isActive }) => (
+        <>
+          {/* A shape cue as well as a colour cue for the active row. */}
+          <span
+            aria-hidden="true"
+            className={`absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full transition-colors ${
+              isActive ? "bg-accent-500" : "bg-transparent"
+            }`}
+          />
+          <Icon name={item.icon} className="w-[18px] h-[18px]" />
+          <span className="truncate">{item.label}</span>
+        </>
+      )}
     </NavLink>
+  );
+}
+
+function NavGroup({
+  label,
+  items,
+  onNavigate,
+  defaultOpen,
+}: {
+  label: string;
+  items: NavItem[];
+  onNavigate: () => void;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-[0.08em] text-chrome-300/60 hover:text-chrome-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+      >
+        <Icon
+          name="chevron-right"
+          className={`w-3 h-3 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+        />
+        {label}
+      </button>
+      {open && (
+        <div className="mt-0.5 space-y-0.5">
+          {items.map((item) => (
+            <SidebarLink key={item.to} item={item} onNavigate={onNavigate} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -189,74 +125,93 @@ export default function Sidebar({
   const { preferences } = usePreferences();
   const { status, backendReachable } = useModelStatus();
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen, onClose]);
+
   const modelReady = backendReachable && status.available;
 
   const content = (
-    <div className="flex h-full w-64 flex-col bg-chrome-900 border-r border-chrome-700">
+    <div className="relative flex h-full w-56 flex-col bg-chrome-900 border-r border-chrome-700">
       <NavLink
         to="/"
-        className="flex items-center gap-2.5 px-4 h-16 shrink-0 border-b border-chrome-700"
+        className="flex items-center gap-2.5 px-4 h-12 shrink-0 border-b border-chrome-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-inset"
         onClick={onClose}
       >
-        <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
-          <circle cx="16" cy="16" r="16" fill="#0a0d12" />
+        <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
           <path
-            d="M4 16c3.5-6 8-9 12-9s8.5 3 12 9c-3.5 6-8 9-12 9s-8.5-3-12-9z"
+            d="M2 16c4-7 8.5-10.5 14-10.5S26 9 30 16c-4 7-8.5 10.5-14 10.5S6 23 2 16z"
             fill="none"
-            stroke="#60a5fa"
-            strokeWidth="2"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            className="text-accent-500"
           />
-          <circle cx="16" cy="16" r="4.5" fill="#60a5fa" />
-          <circle cx="16" cy="16" r="1.6" fill="#030507" />
+          <circle cx="16" cy="16" r="4.75" className="fill-accent-500" />
+          <circle cx="16" cy="16" r="1.5" className="fill-chrome-900" />
         </svg>
         <span className="text-white font-semibold tracking-tight text-[15px]">
           Retina<span className="text-accent-400">AI</span>
         </span>
       </NavLink>
 
-      <nav aria-label="Primary" className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close navigation"
+        className="lg:hidden absolute top-2.5 right-2.5 p-1.5 rounded-md text-chrome-300 hover:text-white hover:bg-chrome-700/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+      >
+        <Icon name="close" className="w-4 h-4" />
+      </button>
+
+      <nav
+        aria-label="Primary"
+        className="flex-1 overflow-y-auto panel-scroll px-3 py-3 space-y-4"
+      >
         <div className="space-y-0.5">
-          {PRIMARY_ITEMS.map((item) => (
-            <SidebarLink key={item.to} item={item} onNavigate={onClose} className={itemClass} />
+          {WORKSPACE_ITEMS.map((item) => (
+            <SidebarLink key={item.to} item={item} onNavigate={onClose} />
           ))}
-          {preferences.researchMode &&
-            RESEARCH_ITEMS.map((item) => (
-              <SidebarLink key={item.to} item={item} onNavigate={onClose} className={itemClass} />
-            ))}
-          <SidebarLink item={KNOWLEDGE_ITEM} onNavigate={onClose} className={itemClass} />
-          <SidebarLink item={SETTINGS_ITEM} onNavigate={onClose} className={itemClass} />
         </div>
 
-        <div>
-          <p className="px-2.5 mb-1 text-[10px] font-semibold uppercase tracking-wider text-chrome-300/60">
-            Reference
-          </p>
-          <div className="space-y-0.5">
-            {REFERENCE_ITEMS.filter(
-              (item) => preferences.researchMode || item.to !== "/model-lab",
-            ).map((item) => (
-              <SidebarLink
-                key={item.to}
-                item={item}
-                onNavigate={onClose}
-                className={referenceItemClass}
-              />
-            ))}
-          </div>
-        </div>
+        {preferences.researchMode && (
+          <NavGroup
+            label="Research"
+            items={RESEARCH_ITEMS}
+            onNavigate={onClose}
+            defaultOpen
+          />
+        )}
+
+        <NavGroup
+          label="Reference"
+          items={REFERENCE_ITEMS}
+          onNavigate={onClose}
+          defaultOpen={false}
+        />
       </nav>
 
-      <div className="shrink-0 border-t border-chrome-700 px-4 py-3">
-        <span
-          className="inline-flex items-center gap-2 text-xs font-medium text-chrome-300"
+      <div className="shrink-0 border-t border-chrome-700 p-3 space-y-0.5">
+        <NavLink
+          to="/settings"
+          className={linkClass}
+          onClick={onClose}
+          title="Preferences, stored in this browser"
+        >
+          <Icon name="settings" className="w-[18px] h-[18px]" />
+          <span>Settings</span>
+        </NavLink>
+        <div
+          className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-chrome-300"
           title={status.note}
         >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${modelReady ? "bg-ok-500" : "bg-clinic-400"}`}
-            aria-hidden="true"
-          />
-          {modelReady ? "Model Ready" : "Model Unavailable"}
-        </span>
+          <StatusDot tone={modelReady ? "ok" : "neutral"} pulse={modelReady} />
+          <span className="truncate">{modelReady ? "Model ready" : "Model unavailable"}</span>
+        </div>
       </div>
     </div>
   );
@@ -269,11 +224,7 @@ export default function Sidebar({
       {/* Mobile: overlay drawer */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/50"
-            aria-hidden="true"
-            onClick={onClose}
-          />
+          <div className="fixed inset-0 bg-black/60" aria-hidden="true" onClick={onClose} />
           <div className="relative">{content}</div>
         </div>
       )}

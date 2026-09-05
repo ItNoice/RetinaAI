@@ -32,7 +32,7 @@ export default function Breadcrumbs() {
 
   if (crumbs.length === 1) {
     return (
-      <span className="text-sm font-medium text-clinic-700">{crumbs[0].label}</span>
+      <span className="text-sm font-medium text-chrome-200">{crumbs[0].label}</span>
     );
   }
 
@@ -43,16 +43,16 @@ export default function Breadcrumbs() {
         return (
           <span key={crumb.to} className="flex items-center gap-1.5 min-w-0">
             {i > 0 && (
-              <span className="text-clinic-300" aria-hidden="true">
+              <span className="text-chrome-300/50" aria-hidden="true">
                 /
               </span>
             )}
             {isLast ? (
-              <span className="font-medium text-clinic-900 truncate">{crumb.label}</span>
+              <span className="font-medium text-white truncate">{crumb.label}</span>
             ) : (
               <Link
                 to={crumb.to}
-                className="text-clinic-500 hover:text-clinic-800 transition-colors truncate"
+                className="text-chrome-300 hover:text-white transition-colors truncate rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
               >
                 {crumb.label}
               </Link>

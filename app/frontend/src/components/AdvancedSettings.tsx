@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
 import { useModelStatus } from "../hooks/useStatus";
 import { reloadModel } from "../lib/api";
+import { getCacheInfo } from "../lib/storage";
 import SettingsToggle from "./SettingsToggle";
 
 // Real, fixed facts about this specific pipeline — not user-configurable,
@@ -22,6 +23,12 @@ export default function AdvancedSettings() {
   const [urlInput, setUrlInput] = useState(preferences.apiBaseUrlOverride ?? "");
   const [reloadResult, setReloadResult] = useState<string | null>(null);
   const [reloading, setReloading] = useState(false);
+  const [cachedCount, setCachedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!expanded) return;
+    void getCacheInfo().then((info) => setCachedCount(info.cachedCount));
+  }, [expanded]);
 
   const handleReload = async () => {
     setReloading(true);
@@ -110,6 +117,22 @@ export default function AdvancedSettings() {
               use the default (localhost:8000).
             </p>
           </div>
+
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <div>
+              <p className="text-clinic-700">Model cache</p>
+              <p className="text-xs text-clinic-500 mt-0.5">
+                Cached Grad-CAM heatmaps and previews on this device.
+              </p>
+            </div>
+            <span className="text-clinic-800 tabular shrink-0">
+              {cachedCount === null ? "—" : `${cachedCount} cached`}
+            </span>
+          </div>
+          <p className="text-xs text-clinic-500 -mt-2">
+            Clear it from Settings → History &amp; Storage → "Clear cached
+            images".
+          </p>
 
           <SettingsToggle
             label="Debug logging"

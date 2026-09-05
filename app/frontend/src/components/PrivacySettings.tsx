@@ -32,6 +32,18 @@ export default function PrivacySettings() {
           checked={preferences.showLocalProcessingIndicator}
           onChange={(v) => setPreference("showLocalProcessingIndicator", v)}
         />
+        <SettingsToggle
+          label="Anonymize exports"
+          description="Strip the filename and exact timestamp from JSON/report exports, keeping only relative timing (e.g. 'analyzed 3 days ago')."
+          checked={preferences.anonymizeExports}
+          onChange={(v) => setPreference("anonymizeExports", v)}
+        />
+        <SettingsToggle
+          label="Include images in report"
+          description="Include the retinal image and Grad-CAM heatmap when exporting a printable report. Off exports text/metrics only."
+          checked={preferences.includeImagesInReport}
+          onChange={(v) => setPreference("includeImagesInReport", v)}
+        />
       </div>
     </div>
   );

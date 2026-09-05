@@ -79,6 +79,18 @@ export async function clearAllAnalyses(): Promise<void> {
   await clear(store);
 }
 
+// Settings > Advanced > "Model cache" — a read-only count of how many
+// analyses currently have a cached Grad-CAM heatmap + cropped preview on
+// this device. Clearing them is StorageSettings' existing
+// clearCachedPreviews(), which this doesn't duplicate.
+export async function getCacheInfo(): Promise<{ cachedCount: number }> {
+  const allKeys = await keys(store);
+  const cachedCount = allKeys.filter(
+    (k): k is string => typeof k === "string" && k.startsWith("heatmap:"),
+  ).length;
+  return { cachedCount };
+}
+
 // Deletes only the Grad-CAM heatmap + cropped-preview blobs, keeping
 // records and original images — for reclaiming space without losing
 // history. These regenerate automatically next time that image is

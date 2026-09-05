@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { deleteAnalysis, listAnalyses } from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
 import { usePreferences } from "../hooks/usePreferences";
+import { useToast } from "../hooks/useToast";
 import AnalysisThumbnail from "./AnalysisThumbnail";
+import AnalysisStatusBadge from "./AnalysisStatusBadge";
+import { ButtonLink, Icon, Skeleton } from "./ui";
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleString(undefined, {
@@ -15,6 +18,7 @@ function formatDate(ts: number) {
 export default function RecentAnalyses({ limit }: { limit?: number }) {
   const [records, setRecords] = useState<AnalysisRecord[] | null>(null);
   const { preferences } = usePreferences();
+  const toast = useToast();
 
   const refresh = () => {
     void listAnalyses().then(setRecords);
@@ -25,18 +29,42 @@ export default function RecentAnalyses({ limit }: { limit?: number }) {
   const handleDelete = async (id: string) => {
     await deleteAnalysis(id);
     refresh();
+    toast.success("Analysis deleted.");
   };
 
   if (records === null) {
-    return <p className="text-sm text-clinic-500">Loading recent analyses…</p>;
+    // Skeletons in the shape of the cards, so the grid doesn't reflow when
+    // the records arrive.
+    return (
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-busy="true">
+        {Array.from({ length: limit ?? 4 }, (_, i) => (
+          <li key={i} className="overflow-hidden rounded-lg border border-clinic-200 bg-surface">
+            <Skeleton className="aspect-square rounded-none" />
+            <div className="space-y-2 p-3">
+              <Skeleton className="h-3.5 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
   }
 
   if (records.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-clinic-300 bg-surface px-5 py-8 text-center">
-        <p className="text-sm text-clinic-500">
-          No analyses yet. Upload a retinal image to get started.
+      <div className="rounded-lg border border-dashed border-clinic-300 bg-surface px-5 py-10 text-center">
+        <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-clinic-200 bg-clinic-50 text-clinic-400">
+          <Icon name="image" className="w-4.5 h-4.5" />
+        </span>
+        <p className="mt-3 text-sm font-medium text-clinic-800">No analyses yet</p>
+        <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-clinic-500">
+          Load a fundus photograph to run it through the pipeline. Results are stored in this
+          browser only.
         </p>
+        <ButtonLink to="/analyze" variant="primary" className="mt-4">
+          <Icon name="upload" className="w-4 h-4" />
+          Load image
+        </ButtonLink>
       </div>
     );
   }
@@ -59,21 +87,7 @@ export default function RecentAnalyses({ limit }: { limit?: number }) {
                 {r.filename}
               </p>
               <p className="text-xs text-clinic-500 mt-0.5">{formatDate(r.createdAt)}</p>
-              <span
-                className={`mt-2 inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded ${
-                  !r.quality.passed
-                    ? "bg-danger-soft text-danger-soft-ink"
-                    : r.prediction
-                      ? "bg-ok-soft text-ok-soft-ink"
-                      : "bg-clinic-100 text-clinic-500"
-                }`}
-              >
-                {!r.quality.passed
-                  ? "Quality issue"
-                  : r.prediction
-                    ? "Analyzed"
-                    : "Model unavailable"}
-              </span>
+              <AnalysisStatusBadge record={r} className="mt-2" />
             </div>
           </Link>
           <button

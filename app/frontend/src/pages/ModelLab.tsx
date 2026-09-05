@@ -20,7 +20,7 @@ export default function ModelLab() {
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-clinic-900">
+        <h1 className="text-xl font-semibold tracking-tight text-clinic-900">
           Model Lab
         </h1>
         <p className="mt-2 text-clinic-600 leading-relaxed">
