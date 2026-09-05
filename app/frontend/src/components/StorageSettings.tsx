@@ -7,21 +7,31 @@ import {
 import SettingsSegmented from "./SettingsSegmented";
 
 export default function StorageSettings() {
-  const { preferences, setPreference } = usePreferences();
+  const { preferences, setPreference, resetPreferences } = usePreferences();
   const toast = useToast();
 
+  // Every button here destroys data, so each one confirms first and reports
+  // what happened. IndexedDB writes do fail in the wild — a full quota, a
+  // private window, a browser that's blocked storage for the origin — and a
+  // silent failure on a privacy control is the worst kind: the user believes
+  // their images are gone when they aren't.
   const runAction = async (
     label: string,
     action: () => Promise<void | number>,
   ) => {
-    const confirmed = window.confirm(`${label}? This cannot be undone.`);
-    if (!confirmed) return;
-    const result = await action();
-    toast.success(
-      typeof result === "number"
-        ? `Removed ${result} analys${result === 1 ? "is" : "es"}.`
-        : "Done.",
-    );
+    if (!window.confirm(`${label}? This cannot be undone.`)) return;
+
+    try {
+      const removed = await action();
+      toast.success(
+        typeof removed === "number"
+          ? `Removed ${removed} analys${removed === 1 ? "is" : "es"}.`
+          : "Done.",
+      );
+    } catch (err) {
+      console.error("Storage action failed:", err);
+      toast.error("Couldn't clear local data. Your browser may be blocking storage.");
+    }
   };
 
   return (
@@ -64,11 +74,15 @@ export default function StorageSettings() {
         >
           Clear cached images (heatmaps &amp; previews)
         </button>
+        {/* Unlike "Clear analysis history" above, this also drops saved
+            preferences — otherwise the two buttons did exactly the same
+            thing while promising different amounts. */}
         <button
           type="button"
           onClick={() =>
-            void runAction("Clear all local data", async () => {
+            void runAction("Clear all local data, including your settings", async () => {
               await clearAllAnalyses();
+              resetPreferences();
             })
           }
           className="block text-sm text-danger-soft-ink hover:opacity-80 transition-opacity font-medium"

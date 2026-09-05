@@ -1,4 +1,5 @@
 import { useTrainingLog } from "../hooks/useStatus";
+import { formatPercent } from "../lib/format";
 
 const KEY_OVERRIDES: Record<string, string> = { lr: "LR" };
 
@@ -68,7 +69,7 @@ export default function Experiments() {
               <p className="text-xs text-clinic-500">Best validation accuracy</p>
               <p className="mt-1 text-2xl font-semibold text-clinic-900 tabular">
                 {trainingLog.bestValAcc !== null
-                  ? `${(trainingLog.bestValAcc * 100).toFixed(1)}%`
+                  ? formatPercent(trainingLog.bestValAcc, 1)
                   : "—"}
               </p>
             </div>
@@ -143,7 +144,7 @@ export default function Experiments() {
                     </div>
                   </div>
                   <span className="w-32 shrink-0 text-right tabular text-clinic-600">
-                    {(e.trainAcc * 100).toFixed(1)}% / {(e.valAcc * 100).toFixed(1)}%
+                    {formatPercent(e.trainAcc, 1)} / {formatPercent(e.valAcc, 1)}
                   </span>
                 </div>
               ))}
@@ -172,9 +173,9 @@ export default function Experiments() {
                     <tr key={e.epoch} className="border-b border-clinic-100 last:border-0">
                       <td className="p-3 text-clinic-900 font-medium">{e.epoch}</td>
                       <td className="p-3 text-right tabular text-clinic-700">{e.trainLoss.toFixed(3)}</td>
-                      <td className="p-3 text-right tabular text-clinic-700">{(e.trainAcc * 100).toFixed(1)}%</td>
+                      <td className="p-3 text-right tabular text-clinic-700">{formatPercent(e.trainAcc, 1)}</td>
                       <td className="p-3 text-right tabular text-clinic-700">{e.valLoss.toFixed(3)}</td>
-                      <td className="p-3 text-right tabular text-clinic-700">{(e.valAcc * 100).toFixed(1)}%</td>
+                      <td className="p-3 text-right tabular text-clinic-700">{formatPercent(e.valAcc, 1)}</td>
                       <td className="p-3 text-right tabular text-clinic-600">{e.epochTimeS.toFixed(0)}s</td>
                     </tr>
                   ))}

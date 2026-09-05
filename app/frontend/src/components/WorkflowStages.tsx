@@ -53,18 +53,18 @@ const STATE_STYLES: Record<StageState, { ring: string; ink: string; label: strin
   },
 };
 
+const STATE_GLYPHS: Partial<Record<StageState, IconName>> = {
+  done: "check",
+  error: "close",
+  warn: "alert",
+};
+
 function StageIcon({ stage }: { stage: Stage }) {
   const style = STATE_STYLES[stage.state];
-  // The glyph carries the state as a shape, not only as a colour: a tick for
-  // complete, the stage's own icon while pending, a spinner while running.
-  const glyph: IconName =
-    stage.state === "done"
-      ? "check"
-      : stage.state === "error"
-        ? "close"
-        : stage.state === "warn"
-          ? "alert"
-          : stage.icon;
+  // The glyph carries state as a shape, not only as a colour — colour alone
+  // fails for the ~8% of men with a red/green deficiency. Stages that haven't
+  // resolved keep their own icon.
+  const glyph: IconName = STATE_GLYPHS[stage.state] ?? stage.icon;
 
   return (
     <span

@@ -54,7 +54,9 @@ describe("deriveStages", () => {
   it("shows real geometry and timing rather than generic labels", () => {
     expect(stage({ record: analyzed }, "image").detail).toBe("640 × 480 px");
     expect(stage({ record: analyzed }, "preprocess").detail).toBe("470 × 470 → 224²");
-    expect(stage({ record: analyzed }, "model").detail).toBe("35 ms");
+    // One decimal, the same as everywhere else the timing is shown — this
+    // used to round here and not in the results panel.
+    expect(stage({ record: analyzed }, "model").detail).toBe("35.2 ms");
     expect(stage({ record: analyzed }, "results").detail).toBe("Severe");
   });
 

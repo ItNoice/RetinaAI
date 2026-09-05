@@ -6,22 +6,9 @@ import {
   type PredictionResult,
 } from "../lib/types";
 import type { Preferences } from "../lib/preferences";
+import { formatBytes, formatMs, formatPercent } from "../lib/format";
 import { Badge, Callout, DataList, Eyebrow, Icon, Panel, PanelHeader, NotAvailable } from "./ui";
 import type { DataRow } from "./ui";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatPct(value: number, decimalPlaces: number): string {
-  return `${(value * 100).toFixed(decimalPlaces)}%`;
-}
-
-function formatMs(ms: number): string {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms.toFixed(1)} ms`;
-}
 
 /**
  * Confidence, described in words as well as a number.
@@ -104,7 +91,7 @@ function PredictionCard({
           {preferences.showConfidenceScores && (
             <div className="text-right shrink-0">
               <p className="text-xl leading-none font-semibold text-clinic-900 metric">
-                {formatPct(prediction.confidence, preferences.decimalPlaces)}
+                {formatPercent(prediction.confidence, preferences.decimalPlaces)}
               </p>
               <p className="mt-1 text-[11px] text-clinic-500">confidence</p>
             </div>
@@ -122,7 +109,7 @@ function PredictionCard({
           <p className="mt-2 text-xs text-clinic-500">
             Next most likely: {runnerUp.cls} at{" "}
             <span className="metric">
-              {formatPct(runnerUp.p, preferences.decimalPlaces)}
+              {formatPercent(runnerUp.p, preferences.decimalPlaces)}
             </span>
           </p>
         )}
@@ -133,7 +120,7 @@ function PredictionCard({
           <Callout tone="warn" role="alert">
             Confidence is below your{" "}
             <span className="metric">
-              {formatPct(preferences.minConfidenceWarning ?? 0, 0)}
+              {formatPercent(preferences.minConfidenceWarning ?? 0, 0)}
             </span>{" "}
             warning threshold. Treat this classification as unreliable.
           </Callout>
@@ -169,7 +156,7 @@ function PredictionCard({
                       isPredicted ? "text-clinic-900 font-medium" : "text-clinic-500"
                     }`}
                   >
-                    {formatPct(p, preferences.decimalPlaces)}
+                    {formatPercent(p, preferences.decimalPlaces)}
                   </span>
                 </li>
               );

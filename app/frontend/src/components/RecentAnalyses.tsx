@@ -7,13 +7,7 @@ import { useToast } from "../hooks/useToast";
 import AnalysisThumbnail from "./AnalysisThumbnail";
 import AnalysisStatusBadge from "./AnalysisStatusBadge";
 import { ButtonLink, Icon, Skeleton } from "./ui";
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
+import { formatDateTime } from "../lib/format";
 
 export default function RecentAnalyses({ limit }: { limit?: number }) {
   const [records, setRecords] = useState<AnalysisRecord[] | null>(null);
@@ -86,7 +80,7 @@ export default function RecentAnalyses({ limit }: { limit?: number }) {
               <p className="text-sm font-medium text-clinic-900 truncate" title={r.filename}>
                 {r.filename}
               </p>
-              <p className="text-xs text-clinic-500 mt-0.5">{formatDate(r.createdAt)}</p>
+              <p className="text-xs text-clinic-500 mt-0.5">{formatDateTime(r.createdAt)}</p>
               <AnalysisStatusBadge record={r} className="mt-2" />
             </div>
           </Link>

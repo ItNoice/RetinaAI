@@ -1,5 +1,11 @@
 import { DR_CLASSES, DR_CLASS_DESCRIPTIONS, type AnalysisRecord } from "../lib/types";
-import { exportDisplayName, exportTimestamp } from "../lib/export";
+import {
+  DISCLAIMER,
+  HEATMAP_DISCLAIMER,
+  exportDisplayName,
+  exportTimestamp,
+} from "../lib/export";
+import { formatMs, formatPercent } from "../lib/format";
 
 // Rendered off-screen at all times (`hidden print:block` — never visible on
 // screen) and shown only by index.css's #print-report print stylesheet,
@@ -45,7 +51,7 @@ export default function AnalysisReport({
       {prediction ? (
         <>
           <p className="text-sm mt-1">
-            {prediction.predictedClass} — {(prediction.confidence * 100).toFixed(1)}% confidence
+            {prediction.predictedClass} — {formatPercent(prediction.confidence, 1)} confidence
           </p>
           <p className="text-xs text-gray-600 mt-1 max-w-lg">
             {DR_CLASS_DESCRIPTIONS[prediction.predictedClass]}
@@ -56,14 +62,15 @@ export default function AnalysisReport({
                 <tr key={cls}>
                   <td className="pr-3 py-0.5">{cls}</td>
                   <td className="py-0.5 tabular-nums">
-                    {((prediction.probabilities[cls] ?? 0) * 100).toFixed(1)}%
+                    {formatPercent(prediction.probabilities[cls] ?? 0, 1)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="text-xs text-gray-600 mt-2">
-            Model version: {prediction.modelVersion} · Processing time: {prediction.processingTimeMs}ms
+            Model version: {prediction.modelVersion} · Processing time:{" "}
+            {formatMs(prediction.processingTimeMs)}
           </p>
         </>
       ) : (
@@ -81,14 +88,11 @@ export default function AnalysisReport({
         {record.backend && ` · cropped to ${record.backend.croppedWidth} × ${record.backend.croppedHeight}px for analysis`}
       </p>
 
+      {/* Same wording as the JSON export's disclaimer — a printed page that
+          says something subtly different from the file is how a caveat gets
+          quoted out of context later. */}
       <p className="text-[10px] text-gray-500 mt-6 pt-3 border-t border-gray-300 leading-relaxed">
-        RetinaAI is an educational and research prototype. It is not a
-        medical device and should not be used to diagnose, treat, or make
-        clinical decisions about any person. Model predictions may be
-        incorrect, and performance may differ across populations, cameras,
-        image quality, and clinical settings. A Grad-CAM heatmap, when
-        shown, highlights regions that influenced the model's prediction —
-        it does not prove those regions contain disease.
+        {DISCLAIMER} {HEATMAP_DISCLAIMER}
       </p>
     </div>
   );

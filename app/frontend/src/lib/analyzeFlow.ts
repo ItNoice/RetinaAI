@@ -11,7 +11,7 @@
 // components.
 import { analyzeImage, type AnalyzeApiResult } from "./api";
 import { checkImageQuality } from "./imageQuality";
-import { saveAnalysis } from "./storage";
+import { saveAnalysis, type ExplainabilityBlobs } from "./storage";
 import type { AnalysisRecord, QualityCheck } from "./types";
 import type { Preferences } from "./preferences";
 
@@ -54,6 +54,24 @@ export function toBackendFields(
   };
 }
 
+/**
+ * The explainability blobs, but only as a pair.
+ *
+ * The viewer overlays the heatmap onto the cropped preview, so one without
+ * the other can't be displayed and shouldn't be stored. Both call sites that
+ * persist a backend result go through this rather than asserting each blob
+ * non-null separately.
+ */
+export function toExplainabilityBlobs(
+  result: AnalyzeApiResult,
+): ExplainabilityBlobs | undefined {
+  if (!result.croppedPreviewBlob || !result.heatmapBlob) return undefined;
+  return {
+    croppedPreviewBlob: result.croppedPreviewBlob,
+    heatmapBlob: result.heatmapBlob,
+  };
+}
+
 export interface RunAnalysisSuccess {
   kind: "ok";
   id: string;
@@ -92,6 +110,8 @@ export async function runAnalysis(
 
   const fields = backendResult ? toBackendFields(backendResult) : null;
 
+  const explainability = backendResult ? toExplainabilityBlobs(backendResult) : undefined;
+
   const id = crypto.randomUUID();
   const record: AnalysisRecord = {
     id,
@@ -104,21 +124,18 @@ export async function runAnalysis(
     quality: fields?.quality ?? check,
     prediction: fields?.prediction ?? null,
     backend: fields?.backend,
-    hasExplainability: fields?.hasExplainability ?? false,
+    hasExplainability: Boolean(explainability),
     awaitingManualAnalysis: !preferences.autoAnalyzeOnUpload,
   };
 
   const stored = preferences.storeAnalysisResults;
   if (stored) {
+    // An empty Blob when image storage is off: the record still needs an
+    // entry at its image key so deletes and cache accounting stay consistent.
     await saveAnalysis(
       record,
       preferences.storeUploadedImages ? file : new Blob(),
-      record.hasExplainability && backendResult
-        ? {
-            croppedPreviewBlob: backendResult.croppedPreviewBlob!,
-            heatmapBlob: backendResult.heatmapBlob!,
-          }
-        : undefined,
+      explainability,
     );
   }
 

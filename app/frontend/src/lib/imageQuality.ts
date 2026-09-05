@@ -1,8 +1,9 @@
-// Cheap client-side quality gate. This does NOT attempt to determine whether
-// an image is actually a retinal fundus photograph (that requires the model
-// in Phase 2/3) — it only rejects inputs that are obviously unusable, so we
-// never hand a corrupt or absurdly small file to a "model" and pretend it
-// produced a meaningful result.
+// Cheap client-side quality gate, run before anything is sent to the backend.
+//
+// It answers "is this a usable image file", not "is this a retinal fundus
+// photograph" — nothing here can tell a retina from a photo of a doorknob.
+// The backend repeats these checks; this copy exists so an obviously bad file
+// fails instantly and offline, without a round trip.
 import type { QualityCheck, QualityIssue } from "./types";
 
 export const SUPPORTED_MIME_TYPES = [
@@ -20,6 +21,9 @@ export interface ProbedImage {
   height: number;
 }
 
+// Decoding via <img> is the cheapest real corruption check available in the
+// browser: a file that claims image/png but won't decode fires onerror, which
+// is exactly the case we want to catch before upload.
 function probeImage(file: File): Promise<ProbedImage | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
@@ -52,6 +56,8 @@ export async function checkImageQuality(
     issues.push("file-too-large");
   }
 
+  // Only probe files we'd accept anyway — decoding an unsupported type just
+  // to learn it's unsupported wastes the user's time on large files.
   let dimensions: ProbedImage | null = null;
   if (isSupportedType) {
     dimensions = await probeImage(file);

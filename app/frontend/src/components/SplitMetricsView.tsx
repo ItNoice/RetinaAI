@@ -2,6 +2,7 @@ import type { SplitMetrics } from "../lib/types";
 import { usePreferences } from "../hooks/usePreferences";
 import { computePerClassStats } from "../lib/perClassMetrics";
 import ConfusionMatrix from "./ConfusionMatrix";
+import { formatPercent } from "../lib/format";
 
 function StatTile({
   label,
@@ -38,8 +39,10 @@ export default function SplitMetricsView({ metrics }: { metrics: SplitMetrics })
   const { preferences } = usePreferences();
   const dp = preferences.decimalPlaces;
 
+  // ROC-AUC is genuinely null when a split is missing a class, so every
+  // metric goes through the same null-aware wrapper.
   const formatPct = (value: number | null) =>
-    value === null ? "—" : `${(value * 100).toFixed(dp)}%`;
+    value === null ? "—" : formatPercent(value, dp);
 
   const totalClassified = Object.values(metrics.classDistribution).reduce(
     (a, b) => a + b,

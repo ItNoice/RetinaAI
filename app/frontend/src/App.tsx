@@ -9,6 +9,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePreferences } from "./hooks/usePreferences";
 import { useModelStatus } from "./hooks/useStatus";
 import { Icon, StatusDot } from "./components/ui";
+import { formatShortcutBinding } from "./lib/formatShortcut";
 
 /**
  * Routes that take over the full viewport instead of sitting in a centred
@@ -83,7 +84,11 @@ function App() {
               className="hidden sm:inline-flex items-center gap-2 rounded-md border border-chrome-700 bg-chrome-800 px-2 py-1 text-xs text-chrome-300 hover:text-white hover:border-chrome-700 hover:bg-chrome-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
               <span>Search</span>
-              <span className="font-mono text-[10px] text-chrome-300/70">⌘K</span>
+              {/* The binding is rebindable in Settings, and "mod" renders as
+                  Ctrl off macOS — so read it rather than hardcoding ⌘K. */}
+              <span className="font-mono text-[10px] text-chrome-300/70">
+                {formatShortcutBinding(preferences.shortcutBindings.commandPalette)}
+              </span>
             </button>
 
             <button

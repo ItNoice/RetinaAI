@@ -1,7 +1,8 @@
 """Pydantic response models for the RetinaAI API.
 
-Field names/shapes intentionally mirror app/frontend/src/lib/types.ts so the
-two stay in sync by inspection.
+Field names and shapes deliberately match app/frontend/src/lib/types.ts, so
+the two can be diffed by eye. There's no codegen step here; keeping them
+boringly identical is what stands in for one.
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ from pydantic import BaseModel
 QualityIssue = Literal["not-an-image", "too-small", "file-too-large", "corrupted"]
 
 
+# Kept in lockstep with the QualityIssue union in the frontend's types.ts —
+# the backend passes these codes straight through to it.
 class QualityCheck(BaseModel):
     passed: bool
     issues: list[QualityIssue]
@@ -34,15 +37,14 @@ class AnalyzeResponse(BaseModel):
     cropped_height: int
     quality: QualityCheck
     preprocessing_time_ms: float
-    # Never fabricated: null until a real model (Phase 3) is wired in.
+    # Null means "no model loaded", never "nothing wrong with this eye".
     prediction: PredictionResult | None = None
-    # The exact cropped+resized image the model analyzed — the frontend
-    # heatmap/overlay views composite on top of this, not the raw upload,
-    # since the heatmap's coordinates only make sense in this frame. Base64
-    # PNG data (no data: prefix). Null whenever prediction is null.
+    # The exact cropped+resized frame the model scored, as base64 PNG (no
+    # data: prefix). The overlay views composite the heatmap onto this rather
+    # than the raw upload — heatmap coordinates only make sense in this frame.
     cropped_preview_png_base64: str | None = None
-    # Colorized Grad-CAM heatmap, same size as the preview above. Null
-    # whenever prediction is null.
+    # Grad-CAM heatmap, same dimensions as the preview above. Also null when
+    # the heatmap couldn't be generated, even if the prediction succeeded.
     heatmap_png_base64: str | None = None
 
 

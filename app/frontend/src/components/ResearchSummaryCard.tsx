@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { usePreferences } from "../hooks/usePreferences";
 import { useMetrics, useTrainingLog } from "../hooks/useStatus";
+import { formatPercent } from "../lib/format";
 
 // A calm, real-data-only summary for the Overview page — deliberately not a
 // dashboard "stat tile wall". Pulls from the same hooks Research.tsx and
@@ -24,13 +25,13 @@ export default function ResearchSummaryCard() {
           <div className="flex justify-between gap-3">
             <dt className="text-clinic-500">Test accuracy</dt>
             <dd className="text-clinic-800 tabular">
-              {(test.accuracy * 100).toFixed(preferences.decimalPlaces)}%
+              {formatPercent(test.accuracy, preferences.decimalPlaces)}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-clinic-500">Test F1 (macro)</dt>
             <dd className="text-clinic-800 tabular">
-              {(test.f1Macro * 100).toFixed(preferences.decimalPlaces)}%
+              {formatPercent(test.f1Macro, preferences.decimalPlaces)}
             </dd>
           </div>
         </dl>
@@ -46,7 +47,7 @@ export default function ResearchSummaryCard() {
             Last training run: {trainingLog.history.length} epochs, best
             validation accuracy{" "}
             {trainingLog.bestValAcc !== null
-              ? `${(trainingLog.bestValAcc * 100).toFixed(preferences.decimalPlaces)}%`
+              ? formatPercent(trainingLog.bestValAcc, preferences.decimalPlaces)
               : "—"}
             .
           </p>

@@ -45,9 +45,10 @@ export function buildQualityChecks(record: AnalysisRecord): QualityCheckRow[] {
     {
       label: "File decodes",
       detail: mimeType || "Decoded successfully",
-      state: quality.issues.includes("not-an-image") || quality.issues.includes("corrupted")
-        ? "fail"
-        : "pass",
+      state:
+        quality.issues.includes("not-an-image") || quality.issues.includes("corrupted")
+          ? "fail"
+          : "pass",
     },
     {
       label: "Minimum dimensions",
@@ -101,11 +102,16 @@ export default function QualityPanel({
   const warned = checks.filter((c) => c.state === "warn").length;
   const assessed = checks.filter((c) => c.state !== "not-implemented");
 
-  const verdict = failed
-    ? { tone: "danger" as const, text: "Not suitable for analysis" }
-    : warned
-      ? { tone: "warn" as const, text: "Analyzed with caveats" }
-      : { tone: "ok" as const, text: "Suitable for analysis" };
+  // Worst state wins: one hard failure outranks any number of warnings.
+  let verdict: { tone: "ok" | "warn" | "danger"; text: string } = {
+    tone: "ok",
+    text: "Suitable for analysis",
+  };
+  if (failed) {
+    verdict = { tone: "danger", text: "Not suitable for analysis" };
+  } else if (warned) {
+    verdict = { tone: "warn", text: "Analyzed with caveats" };
+  }
 
   return (
     <Panel padding="lg" className={className}>

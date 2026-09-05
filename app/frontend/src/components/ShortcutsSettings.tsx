@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
-import { formatShortcutBinding } from "../lib/formatShortcut";
+import { formatShortcutBinding, normalizeShortcutKey } from "../lib/formatShortcut";
 import {
   DEFAULT_SHORTCUT_BINDINGS,
   type ShortcutAction,
@@ -22,11 +22,16 @@ const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
 
 const ORDER = Object.keys(SHORTCUT_LABELS) as ShortcutAction[];
 
+// Returns null for keypresses that shouldn't end recording: Escape cancels,
+// and a modifier on its own is the user still mid-chord.
 function captureBinding(e: KeyboardEvent): string | null {
   if (e.key === "Escape") return null;
+  if (["Control", "Meta", "Shift", "Alt"].includes(e.key)) return null;
+
+  // Normalized the same way the matcher normalizes incoming keys, so a
+  // binding recorded here is guaranteed to fire later.
+  const key = normalizeShortcutKey(e.key);
   const mod = e.metaKey || e.ctrlKey;
-  if (["Control", "Meta", "Shift", "Alt"].includes(e.key)) return null; // modifier alone
-  const key = e.key === "=" ? "+" : e.key === "_" ? "-" : e.key;
   return mod ? `mod+${key.toLowerCase()}` : key;
 }
 

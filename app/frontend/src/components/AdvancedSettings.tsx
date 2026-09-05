@@ -34,14 +34,16 @@ export default function AdvancedSettings() {
     setReloading(true);
     setReloadResult(null);
     try {
-      const result = await reloadModel();
-      setReloadResult(
-        result
-          ? result.available
-            ? `Reloaded — ${result.version}`
-            : "Reloaded — no checkpoint found on disk"
-          : "Backend unreachable",
-      );
+      const status = await reloadModel();
+      if (!status) {
+        setReloadResult("Backend unreachable");
+      } else if (status.available) {
+        setReloadResult(`Reloaded — ${status.version}`);
+      } else {
+        // The backend answered, so the reload itself worked — there just
+        // isn't a checkpoint at models/dr_classifier.pt to pick up.
+        setReloadResult("Reloaded — no checkpoint found on disk");
+      }
     } finally {
       setReloading(false);
     }

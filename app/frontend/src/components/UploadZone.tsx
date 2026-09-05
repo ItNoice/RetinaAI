@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SUPPORTED_MIME_TYPES, checkImageQuality } from "../lib/imageQuality";
 import { describeQualityIssue, runAnalysis } from "../lib/analyzeFlow";
+import { formatBytes } from "../lib/format";
 import { usePreferences } from "../hooks/usePreferences";
 import { useModelStatus } from "../hooks/useStatus";
 import type { QualityCheck } from "../lib/types";
@@ -11,12 +12,6 @@ import { Button, Callout, DataList, Icon, IndeterminateBar, Panel } from "./ui";
 
 const FORMAT_LABELS = "JPEG, PNG, TIFF, WebP";
 const MAX_SIZE_LABEL = "25 MB";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 interface Staged {
   file: File;
@@ -104,6 +99,9 @@ export default function UploadZone() {
 
   const busy = phase !== "idle";
 
+  // The pre-analysis view of the same strip Analysis.tsx shows afterwards.
+  // It can't use lib/workflow's deriveStages: there's no AnalysisRecord yet,
+  // only a staged file, so the last three stages are all forward-looking.
   const stages: Stage[] = [
     {
       id: "image",

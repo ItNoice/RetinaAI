@@ -38,33 +38,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyAccentColor(preferences.accentColor, resolvedTheme);
   }, [preferences.accentColor, resolvedTheme]);
 
+  // Each of these preferences is implemented as a class on <html> that
+  // index.css keys off. One effect over a table rather than four identical
+  // ones, so adding the next such preference is a single line.
   useEffect(() => {
-    document.documentElement.classList.toggle(
-      "density-compact",
-      preferences.density === "compact",
-    );
-  }, [preferences.density]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle(
-      "force-reduce-motion",
-      preferences.reduceMotion,
-    );
-  }, [preferences.reduceMotion]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle(
-      "larger-text",
-      preferences.largerText,
-    );
-  }, [preferences.largerText]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle(
-      "high-contrast",
-      preferences.highContrast,
-    );
-  }, [preferences.highContrast]);
+    const root = document.documentElement;
+    root.classList.toggle("density-compact", preferences.density === "compact");
+    root.classList.toggle("force-reduce-motion", preferences.reduceMotion);
+    root.classList.toggle("larger-text", preferences.largerText);
+    root.classList.toggle("high-contrast", preferences.highContrast);
+  }, [
+    preferences.density,
+    preferences.reduceMotion,
+    preferences.largerText,
+    preferences.highContrast,
+  ]);
 
   // Runs once per app load, not on every preference change — a sweep is
   // cheap but there's no reason to re-run it just because e.g. the theme

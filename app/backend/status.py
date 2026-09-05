@@ -1,11 +1,12 @@
-"""Live model/dataset status, backed by whatever is actually on disk.
+"""Model, dataset, metrics and training-log status, read from what's on disk.
 
-Mirrors app/frontend/src/lib/modelStatus.ts's shape. Before a checkpoint
-exists at ml.inference.MODEL_PATH, `model_status()` reports `available:
-False` — never a fabricated architecture/version.
+Nothing here is hardcoded optimism: if there's no checkpoint, no metrics file
+or no training log, the corresponding endpoint says so. The frontend has a
+real "not available yet" state for each, and it's meant to be used.
 """
 
 import json
+import logging
 from pathlib import Path
 
 from ml.inference import get_model_info
@@ -19,10 +20,13 @@ from .schemas import (
     TrainingLogResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 METRICS_PATH = REPO_ROOT / "models" / "eval_metrics.json"
 TRAIN_LOG_PATH = REPO_ROOT / "models" / "train_log.json"
 
+MODEL_NAME = "Diabetic retinopathy classifier"
 TASK_DESCRIPTION = (
     "5-class DR severity grading (No DR / Mild / Moderate / Severe / Proliferative)"
 )
@@ -51,10 +55,11 @@ _UNAVAILABLE_DATASET_STATUS = DatasetStatusResponse(
 
 def model_status() -> ModelStatusResponse:
     info = get_model_info()
+
     if not info.available:
         return ModelStatusResponse(
             available=False,
-            name="Diabetic retinopathy classifier",
+            name=MODEL_NAME,
             version=None,
             architecture=None,
             task=TASK_DESCRIPTION,
@@ -64,9 +69,10 @@ def model_status() -> ModelStatusResponse:
                 "validated and preprocessed, but no prediction is produced."
             ),
         )
+
     return ModelStatusResponse(
         available=True,
-        name="Diabetic retinopathy classifier",
+        name=MODEL_NAME,
         version=info.version,
         architecture=info.architecture,
         task=TASK_DESCRIPTION,
@@ -79,16 +85,21 @@ def model_status() -> ModelStatusResponse:
 
 
 def dataset_status() -> DatasetStatusResponse:
-    info = get_model_info()
-    return DATASET_STATUS if info.available else _UNAVAILABLE_DATASET_STATUS
+    # Tied to the model rather than to the dataset directory on purpose: what
+    # the app should report is the data behind the loaded checkpoint, not
+    # whatever happens to be sitting in datasets/.
+    return DATASET_STATUS if get_model_info().available else _UNAVAILABLE_DATASET_STATUS
 
 
 def metrics_status() -> MetricsResponse:
-    """Reads models/eval_metrics.json, written by ml/evaluate.py. Returns
-    available=False with no split data when that file doesn't exist — a
-    trained-but-unevaluated model reports no metrics rather than fabricated
-    ones."""
-    if not METRICS_PATH.exists():
+    """Evaluation metrics from models/eval_metrics.json, written by ml/evaluate.py.
+
+    A trained-but-unevaluated model reports no metrics. That's the point —
+    there's no way to reach this endpoint's `available: True` branch without
+    someone having actually run an evaluation.
+    """
+    data = _read_json(METRICS_PATH)
+    if data is None:
         return MetricsResponse(
             available=False,
             note=(
@@ -98,7 +109,6 @@ def metrics_status() -> MetricsResponse:
             ),
         )
 
-    data = json.loads(METRICS_PATH.read_text())
     return MetricsResponse(
         available=True,
         note=(
@@ -108,6 +118,8 @@ def metrics_status() -> MetricsResponse:
             "selection; test metrics use the full, uncapped, held-out "
             "test split."
         ),
+        # Splits are evaluated in separate runs, so any of the three may be
+        # absent from the file.
         train=SplitMetrics(**data["train"]) if "train" in data else None,
         valid=SplitMetrics(**data["valid"]) if "valid" in data else None,
         test=SplitMetrics(**data["test"]) if "test" in data else None,
@@ -115,24 +127,40 @@ def metrics_status() -> MetricsResponse:
 
 
 def training_log() -> TrainingLogResponse:
-    """Reads models/train_log.json, written by ml/train.py — the real
-    per-epoch history of the actual training run that produced
-    dr_classifier.pt. Returns available=False when no run has happened."""
-    if not TRAIN_LOG_PATH.exists():
+    """Per-epoch history of the run that produced the current checkpoint."""
+    data = _read_json(TRAIN_LOG_PATH)
+    if data is None:
         return TrainingLogResponse(
             available=False,
             note="No training run has been logged yet. Run ml/train.py to produce one.",
         )
 
-    data = json.loads(TRAIN_LOG_PATH.read_text())
     return TrainingLogResponse(
         available=True,
         note=(
             "The actual per-epoch history of the training run that produced "
             "the currently loaded checkpoint — see ml/train.py."
         ),
-        history=[EpochRecord(**epoch) for epoch in data["history"]],
-        best_val_acc=data["best_val_acc"],
-        total_time_s=data["total_time_s"],
-        hyperparameters=data["args"],
+        history=[EpochRecord(**epoch) for epoch in data.get("history", [])],
+        best_val_acc=data.get("best_val_acc"),
+        total_time_s=data.get("total_time_s"),
+        hyperparameters=data.get("args", {}),
     )
+
+
+def _read_json(path: Path) -> dict | None:
+    """Load a JSON artifact, or None if it's missing or unreadable.
+
+    Half-written files are a real possibility here: ml/train.py rewrites
+    train_log.json at the end of a run, and someone will inevitably hit the
+    Research page mid-write. Treating that as "not available yet" is much
+    better than a 500 on a page that's mostly informational.
+    """
+    if not path.exists():
+        return None
+
+    try:
+        return json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        logger.exception("Could not read %s; reporting it as unavailable", path)
+        return None

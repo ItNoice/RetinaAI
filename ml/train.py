@@ -1,14 +1,15 @@
-"""Training entrypoint for the diabetic retinopathy classifier.
+"""Fine-tune the diabetic retinopathy classifier on the DDR grading subset.
 
-Fine-tunes an ImageNet-pretrained ResNet-18 (see ml/model.py) on the DDR
-grading subset (see DATASET.md) using DDR's own train/valid/test split.
-Runs on CPU by design — this project has no GPU available — so the backbone
-is mostly frozen (only layer4 + the classification head train) and dataset
-size is configurable via --max-per-class-train/valid so a run stays
-tractable. This is a real, disclosed compute constraint: see the "Model
-methodology" note it writes into the saved metadata, and DATASET.md.
+Runs on CPU. That constraint drives most of what looks unusual here: the
+backbone is mostly frozen (ml/model.py), the dataset is subsampled per class
+via --max-per-class-*, and epoch counts are small. It's an honest research
+prototype, not a production training run, and the metadata written into the
+checkpoint says so.
 
-Usage:
+Uses DDR's own train/valid split — the test split is never touched here, not
+even for checkpoint selection, so ml/evaluate.py has something genuinely
+held out to report on.
+
     python -m ml.train --data-root datasets/ddr_raw/DR_grading --epochs 5
 """
 
@@ -24,7 +25,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from ml.dataset import DDRGradingDataset, load_split
+from ml.dataset import DDRGradingDataset, Sample, load_split
 from ml.model import ARCHITECTURE_NAME, create_model
 from ml.types import DR_CLASSES
 
@@ -32,26 +33,31 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL_PATH = REPO_ROOT / "models" / "dr_classifier.pt"
 
 
-def compute_class_weights(samples, num_classes: int) -> torch.Tensor:
-    """Inverse-frequency class weights so the (heavily imbalanced, "No DR"
-    dominated) DR grading task doesn't collapse to always predicting the
-    majority class."""
+def compute_class_weights(samples: list[Sample], num_classes: int) -> torch.Tensor:
+    """Inverse-frequency weights for the loss.
+
+    DDR is dominated by "No DR". Unweighted, the model learns to predict it
+    unconditionally and scores a deceptively good accuracy while being
+    useless for the grades that actually matter clinically.
+    """
     counts = Counter(s.label for s in samples)
     total = sum(counts.values())
-    weights = [
-        total / (num_classes * counts.get(i, 1)) for i in range(num_classes)
-    ]
+    # counts.get(i, 1) rather than 0: a class absent from a subsample would
+    # otherwise divide by zero. Its weight is meaningless either way.
+    weights = [total / (num_classes * counts.get(i, 1)) for i in range(num_classes)]
     return torch.tensor(weights, dtype=torch.float32)
 
 
 def run_epoch(model, loader, criterion, optimizer, device, train: bool) -> tuple[float, float]:
+    """One pass over `loader`. Returns (mean loss, accuracy)."""
     model.train(mode=train)
+
     total_loss = 0.0
     correct = 0
     total = 0
 
-    context = torch.enable_grad() if train else torch.no_grad()
-    with context:
+    grad_context = torch.enable_grad() if train else torch.no_grad()
+    with grad_context:
         for images, labels in loader:
             images = images.to(device)
             labels = labels.to(device)
@@ -66,14 +72,17 @@ def run_epoch(model, loader, criterion, optimizer, device, train: bool) -> tuple
                 loss.backward()
                 optimizer.step()
 
+            # Weight by batch size so a short final batch doesn't skew the mean.
             total_loss += loss.item() * images.size(0)
             correct += (outputs.argmax(dim=1) == labels).sum().item()
             total += images.size(0)
 
+    # max(total, 1) guards the empty-loader case; callers already reject it,
+    # but a ZeroDivisionError here would be a miserable way to find out.
     return total_loss / max(total, 1), correct / max(total, 1)
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-root", type=Path, required=True, help="Path to DR_grading/")
     parser.add_argument("--epochs", type=int, default=5)
@@ -84,12 +93,25 @@ def main() -> None:
     parser.add_argument("--max-per-class-valid", type=int, default=150)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--output", type=Path, default=DEFAULT_MODEL_PATH)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    if not args.data_root.is_dir():
+        raise SystemExit(f"--data-root {args.data_root} does not exist. See DATASET.md.")
 
     device = torch.device("cpu")
 
     train_samples = load_split(args.data_root, "train", max_per_class=args.max_per_class_train)
     valid_samples = load_split(args.data_root, "valid", max_per_class=args.max_per_class_valid)
+    if not train_samples or not valid_samples:
+        raise SystemExit(
+            f"Found {len(train_samples)} train / {len(valid_samples)} valid samples. "
+            f"The label files under {args.data_root} exist but the images they "
+            "reference don't — likely a partial download."
+        )
 
     train_loader = DataLoader(
         DDRGradingDataset(train_samples, args.image_size),
@@ -105,8 +127,9 @@ def main() -> None:
     )
 
     model = create_model(num_classes=len(DR_CLASSES), freeze_backbone=True).to(device)
-    class_weights = compute_class_weights(train_samples, len(DR_CLASSES))
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    criterion = nn.CrossEntropyLoss(weight=compute_class_weights(train_samples, len(DR_CLASSES)))
+    # Only the unfrozen parameters go to the optimizer — handing it frozen
+    # ones works, but hides the fact that most of the network isn't training.
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(trainable_params, lr=args.lr)
 
@@ -119,8 +142,12 @@ def main() -> None:
 
     for epoch in range(1, args.epochs + 1):
         epoch_start = time.time()
-        train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, device, train=True)
-        val_loss, val_acc = run_epoch(model, valid_loader, criterion, optimizer, device, train=False)
+        train_loss, train_acc = run_epoch(
+            model, train_loader, criterion, optimizer, device, train=True
+        )
+        val_loss, val_acc = run_epoch(
+            model, valid_loader, criterion, optimizer, device, train=False
+        )
         epoch_time = time.time() - epoch_start
 
         print(
@@ -140,24 +167,11 @@ def main() -> None:
             }
         )
 
+        # >= rather than >: with few epochs and a small valid set, a later
+        # epoch that ties is usually the better-converged one to keep.
         if val_acc >= best_val_acc:
             best_val_acc = val_acc
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(
-                {
-                    "model_state_dict": model.state_dict(),
-                    "architecture": ARCHITECTURE_NAME,
-                    "num_classes": len(DR_CLASSES),
-                    "class_names": DR_CLASSES,
-                    "image_size": args.image_size,
-                    "trained_on": "DDR grading subset (CC BY 4.0) — see DATASET.md",
-                    "train_samples": len(train_samples),
-                    "valid_samples": len(valid_samples),
-                    "best_val_acc": best_val_acc,
-                    "epoch": epoch,
-                },
-                args.output,
-            )
+            save_checkpoint(model, args, epoch, best_val_acc, train_samples, valid_samples)
             print(f"  -> saved checkpoint (val_acc={val_acc:.4f}) to {args.output}")
 
     total_time = time.time() - start_time
@@ -176,5 +190,35 @@ def main() -> None:
     print(f"Training complete in {total_time:.1f}s. Best val_acc={best_val_acc:.4f}. Log: {log_path}")
 
 
+def save_checkpoint(model, args, epoch, best_val_acc, train_samples, valid_samples) -> None:
+    """Write the checkpoint, provenance included.
+
+    The dataset/sample-count fields aren't decoration: the backend reads them
+    back out to report what the deployed model was actually trained on, and
+    an unlabelled .pt file is how you end up unable to answer that later.
+    """
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "architecture": ARCHITECTURE_NAME,
+            "num_classes": len(DR_CLASSES),
+            "class_names": DR_CLASSES,
+            "image_size": args.image_size,
+            "trained_on": "DDR grading subset (CC BY 4.0) — see DATASET.md",
+            "train_samples": len(train_samples),
+            "valid_samples": len(valid_samples),
+            "best_val_acc": best_val_acc,
+            "epoch": epoch,
+        },
+        args.output,
+    )
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        # Ctrl-C during a long CPU epoch is expected, not a crash. The last
+        # checkpoint that improved val_acc is already on disk.
+        print("\nInterrupted. The most recent improving checkpoint was kept.")

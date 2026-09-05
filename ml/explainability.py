@@ -1,13 +1,12 @@
-"""Grad-CAM explainability for the retinal classifier.
+"""Grad-CAM heatmaps for the retinal classifier.
 
-Produces a heatmap over the regions of the *preprocessed* (cropped +
-resized) image that contributed most to the model's prediction for its
-predicted class — using Grad-CAM (Selvaraju et al., 2017) on the last
-convolutional block of the ResNet-18 backbone (ml/model.py).
+Grad-CAM (Selvaraju et al., 2017) over layer4 of the ResNet-18 backbone —
+the last conv block, which is the usual choice: deep enough to carry class
+information, still spatial enough to localize.
 
-This does not prove that highlighted regions contain disease — Grad-CAM
-shows what the model attended to, not ground truth pathology. See the
-disclaimer surfaced alongside it in the frontend.
+Worth being blunt about what this is: a map of where the model looked, not a
+map of where disease is. The two often coincide and sometimes badly don't.
+The frontend shows it with that caveat attached.
 """
 
 from __future__ import annotations
@@ -25,21 +24,29 @@ from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 def generate_gradcam_png(
     model: torch.nn.Module, normalized_image: np.ndarray, target_class_idx: int
 ) -> bytes:
-    """`normalized_image` is the (3, H, W) ImageNet-normalized array the
-    model actually saw (ml.preprocessing.preprocess's `.normalized`).
-    Returns a colorized heatmap as PNG bytes, same H×W as the input, with no
-    original image blended in — the frontend composites it over the
-    preprocessed preview image itself, with an adjustable opacity slider.
+    """Heatmap for `target_class_idx` as PNG bytes, same H×W as the input.
+
+    `normalized_image` must be the (3, H, W) array the model actually saw —
+    ml.preprocessing.preprocess's `.normalized`. Feeding it the raw upload
+    produces a heatmap for a frame the model never scored.
+
+    The heatmap is returned on its own, with no source image blended in:
+    the frontend composites it over the preview itself so the overlay opacity
+    stays adjustable client-side.
     """
     target_layers = [model.layer4[-1]]
 
     input_tensor = torch.from_numpy(normalized_image).unsqueeze(0)
     with GradCAM(model=model, target_layers=target_layers) as cam:
+        # cam() returns one map per batch item; we only ever pass one image.
         grayscale_cam = cam(
             input_tensor=input_tensor,
             targets=[ClassifierOutputTarget(target_class_idx)],
-        )[0]  # (H, W) float32 in [0, 1]
+        )[0]  # (H, W), float32 in [0, 1]
 
+    # JET is the convention readers expect from published Grad-CAM figures.
+    # OpenCV hands back BGR, so convert before Pillow sees it or the heatmap
+    # comes out with its red and blue ends swapped.
     heatmap_bgr = cv2.applyColorMap(np.uint8(255 * grayscale_cam), cv2.COLORMAP_JET)
     heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
 

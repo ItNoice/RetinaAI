@@ -7,6 +7,7 @@
 // the record to back it up.
 import type { Stage, StageState } from "../components/WorkflowStages";
 import type { AnalysisRecord } from "./types";
+import { formatMs } from "./format";
 
 export interface WorkflowInput {
   /** Null before an image has been chosen. */
@@ -17,10 +18,6 @@ export interface WorkflowInput {
   failedStage?: "image" | "quality" | "analysis" | null;
   /** False when the backend could not be reached at all. */
   backendReachable?: boolean;
-}
-
-function formatMs(ms: number): string {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${Math.round(ms)} ms`;
 }
 
 export function deriveStages({
@@ -35,16 +32,15 @@ export function deriveStages({
   const prediction = record?.prediction ?? null;
 
   // --- 1. Image ---------------------------------------------------------
-  const imageState: StageState = failedStage === "image"
-    ? "error"
-    : hasImage
-      ? "done"
-      : busy
-        ? "active"
-        : "pending";
-  const imageDetail = hasImage && record
-    ? `${record.width} × ${record.height} px`
-    : undefined;
+  let imageState: StageState = "pending";
+  if (failedStage === "image") {
+    imageState = "error";
+  } else if (hasImage) {
+    imageState = "done";
+  } else if (busy) {
+    imageState = "active";
+  }
+  const imageDetail = record ? `${record.width} × ${record.height} px` : undefined;
 
   // --- 2. Quality check -------------------------------------------------
   // Real: format, size and minimum-dimension validation, run client-side and
@@ -56,11 +52,13 @@ export function deriveStages({
     qualityDetail = "Rejected";
   } else if (quality) {
     qualityState = quality.passed ? "done" : "warn";
-    qualityDetail = quality.passed
-      ? "Checks passed"
-      : quality.issues.includes("too-small")
-        ? "Below 128 px"
-        : "Issue flagged";
+    if (quality.passed) {
+      qualityDetail = "Checks passed";
+    } else if (quality.issues.includes("too-small")) {
+      qualityDetail = "Below 128 px";
+    } else {
+      qualityDetail = "Issue flagged";
+    }
   } else if (busy) {
     qualityState = "active";
   }
@@ -101,13 +99,14 @@ export function deriveStages({
   }
 
   // --- 5. Results -------------------------------------------------------
-  const resultsState: StageState = prediction
-    ? "done"
-    : busy
-      ? "pending"
-      : hasImage && modelState === "unavailable"
-        ? "unavailable"
-        : "pending";
+  // Mirrors the model stage rather than tracking anything of its own: there
+  // are no results to show that the model didn't produce.
+  let resultsState: StageState = "pending";
+  if (prediction) {
+    resultsState = "done";
+  } else if (!busy && modelState === "unavailable") {
+    resultsState = "unavailable";
+  }
 
   return [
     { id: "image", label: "Image", icon: "image", state: imageState, detail: imageDetail },

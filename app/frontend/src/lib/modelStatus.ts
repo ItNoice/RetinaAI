@@ -1,7 +1,9 @@
-// Single source of truth for "is a real model wired up right now." Phase 3
-// will replace `available: false` with real values once ml/inference.py is
-// integrated behind the backend. Nothing here may be hard-coded to imply a
-// working model exists before it actually does.
+// Shapes for the backend's model/dataset status, plus the values the UI shows
+// when the backend hasn't answered (yet, or at all).
+//
+// The fallbacks are deliberately the pessimistic ones: an unreachable backend
+// renders as "no model connected", never as a plausible-looking model that
+// isn't there. Everything real comes from lib/api.ts.
 export interface ModelStatusInfo {
   available: boolean;
   name: string;
@@ -12,7 +14,7 @@ export interface ModelStatusInfo {
   note: string;
 }
 
-export const MODEL_STATUS: ModelStatusInfo = {
+export const UNAVAILABLE_MODEL_STATUS: ModelStatusInfo = {
   available: false,
   name: "Diabetic retinopathy classifier",
   version: null,
@@ -29,7 +31,7 @@ export interface DatasetInfo {
   note: string;
 }
 
-export const DATASET_STATUS: DatasetInfo = {
+export const UNAVAILABLE_DATASET_STATUS: DatasetInfo = {
   name: null,
   license: null,
   numImages: null,

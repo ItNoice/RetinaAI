@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { useDatasetStatus, useModelStatus, useTrainingLog } from "../hooks/useStatus";
+import { formatPercent } from "../lib/format";
 
 // Real, fixed facts about this specific pipeline — mirrors the language
 // already used in AdvancedSettings.tsx and Methods.tsx. Not configurable:
@@ -120,7 +121,7 @@ export default function ModelLab() {
             <dd className="text-clinic-800 text-right tabular">{trainingLog.history.length}</dd>
             <dt className="text-clinic-500">Best validation accuracy</dt>
             <dd className="text-clinic-800 text-right tabular">
-              {trainingLog.bestValAcc !== null ? `${(trainingLog.bestValAcc * 100).toFixed(1)}%` : "—"}
+              {trainingLog.bestValAcc !== null ? formatPercent(trainingLog.bestValAcc, 1) : "—"}
             </dd>
           </dl>
         ) : (

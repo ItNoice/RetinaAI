@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreferences } from "../hooks/usePreferences";
 import { useShortcutListener } from "../hooks/useShortcutListener";
+import type { ShortcutEventName } from "../lib/shortcutBus";
 import { enhanceImage } from "../lib/imageEnhance";
 import { Icon, type IconName } from "./ui";
 
@@ -69,6 +70,21 @@ const MODE_HINTS: Record<ViewMode, string> = {
   overlay: "Grad-CAM composited over the analyzed frame",
 };
 
+// Subscribes to a shortcut, but does nothing while the viewer's transform is
+// externally controlled. The guard lives inside a stable callback rather than
+// at the call site: a fresh no-op arrow each render would resubscribe every
+// listener on every render.
+function useViewerShortcut(
+  name: ShortcutEventName,
+  controlled: boolean,
+  handler: () => void,
+): void {
+  const guarded = useCallback(() => {
+    if (!controlled) handler();
+  }, [controlled, handler]);
+  useShortcutListener(name, guarded);
+}
+
 export default function ImageViewer({
   imageUrl,
   croppedPreviewUrl,
@@ -128,7 +144,11 @@ export default function ImageViewer({
   const clampOffset = useCallback(
     (next: { x: number; y: number }, s: number) => {
       if (s <= 1) return { x: 0, y: 0 };
-      const bound = (s - 1) * 200; // generous drag bound, image is object-contain
+      // Deliberately loose rather than computed from the rendered bounds:
+      // the image is object-contain inside a container whose size we don't
+      // track, and an over-tight clamp that fights the user is worse than
+      // letting them drag slightly past the edge.
+      const bound = (s - 1) * 200;
       return {
         x: Math.max(-bound, Math.min(bound, next.x)),
         y: Math.max(-bound, Math.min(bound, next.y)),
@@ -184,26 +204,30 @@ export default function ImageViewer({
     panStart.current = null;
   };
 
-  const toggleFullscreen = useCallback(async () => {
+  const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      await containerRef.current.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
-    }
+    const request = document.fullscreenElement
+      ? document.exitFullscreen()
+      : containerRef.current.requestFullscreen();
+    // Browsers reject this when the call isn't tied to a user gesture, or
+    // when an iframe/permissions policy forbids it. Nothing to do about it
+    // and nothing to tell the user — but an unhandled rejection in the
+    // console sends the next person debugging down the wrong path.
+    void request.catch(() => {});
   }, []);
 
   const toggleHeatmapView = useCallback(() => {
     setViewMode((m) => (m === "original" ? "overlay" : "original"));
   }, []);
 
-  // Global keyboard shortcuts only act on the uncontrolled (primary) viewer
-  // instance — see the `controlled` prop doc comment above.
-  useShortcutListener("fullscreen", controlled ? () => {} : () => void toggleFullscreen());
-  useShortcutListener("toggle-heatmap", controlled ? () => {} : toggleHeatmapView);
-  useShortcutListener("reset-viewer", controlled ? () => {} : reset);
-  useShortcutListener("zoom-in", controlled ? () => {} : zoomIn);
-  useShortcutListener("zoom-out", controlled ? () => {} : zoomOut);
+  // Global shortcuts drive only the uncontrolled (primary) viewer — see the
+  // `controlled` prop above.
+  const isControlled = Boolean(controlled);
+  useViewerShortcut("fullscreen", isControlled, toggleFullscreen);
+  useViewerShortcut("toggle-heatmap", isControlled, toggleHeatmapView);
+  useViewerShortcut("reset-viewer", isControlled, reset);
+  useViewerShortcut("zoom-in", isControlled, zoomIn);
+  useViewerShortcut("zoom-out", isControlled, zoomOut);
 
   useEffect(() => {
     const handler = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -274,16 +298,19 @@ export default function ImageViewer({
   const isDerived = viewMode !== "original";
   const isAiGenerated = viewMode === "heatmap" || viewMode === "overlay";
 
+  // Fullscreen drops the border and rounding — the viewer is the whole
+  // screen, so a rounded card edge floating against black looks like a bug.
+  let shellClass = "rounded-lg border border-chrome-700";
+  if (isFullscreen) {
+    shellClass = "h-screen";
+  } else if (fill) {
+    shellClass = "h-full";
+  }
+
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-col overflow-hidden bg-chrome-950 ${
-        fill && !isFullscreen
-          ? "h-full"
-          : isFullscreen
-            ? "h-screen"
-            : "rounded-lg border border-chrome-700"
-      }`}
+      className={`relative flex flex-col overflow-hidden bg-chrome-950 ${shellClass}`}
     >
       {/* Stage --------------------------------------------------------- */}
       <div
@@ -479,7 +506,7 @@ export default function ImageViewer({
         <ToolButton
           icon={isFullscreen ? "fullscreen-exit" : "fullscreen"}
           label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-          onClick={() => void toggleFullscreen()}
+          onClick={toggleFullscreen}
         />
       </div>
     </div>

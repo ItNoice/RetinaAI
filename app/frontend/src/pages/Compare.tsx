@@ -9,6 +9,7 @@ import {
 import { DR_CLASSES, type AnalysisRecord } from "../lib/types";
 import AnalysisThumbnail from "../components/AnalysisThumbnail";
 import ImageViewer, { type ViewerTransform } from "../components/ImageViewer";
+import { formatDate, formatPercent } from "../lib/format";
 
 const MAX_COMPARE = 4;
 
@@ -16,10 +17,6 @@ interface DetailedImages {
   imageUrl: string;
   croppedPreviewUrl: string | null;
   heatmapUrl: string | null;
-}
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
 // Loads full-resolution image/preview/heatmap object URLs for the detailed
@@ -195,7 +192,7 @@ export default function Compare() {
                         <p className="text-xs text-clinic-600">
                           {record.prediction?.predictedClass ?? "Model unavailable"}
                           {record.prediction &&
-                            ` — ${(record.prediction.confidence * 100).toFixed(1)}% confidence`}
+                            ` — ${formatPercent(record.prediction.confidence, 1)} confidence`}
                         </p>
                       </div>
                     );
@@ -298,7 +295,7 @@ export default function Compare() {
                           {selected.map((r) => (
                             <td key={r.id} className="p-3 tabular text-clinic-800">
                               {r.prediction
-                                ? `${(r.prediction.confidence * 100).toFixed(1)}%`
+                                ? formatPercent(r.prediction.confidence, 1)
                                 : "—"}
                             </td>
                           ))}

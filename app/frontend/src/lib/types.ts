@@ -1,6 +1,7 @@
-// DR severity classes used by the (future) diabetic retinopathy classifier.
-// Kept centralized so additional conditions can be added without touching
-// every component that renders a class label.
+// The ICDR severity scale, in order. Order matters beyond presentation: it's
+// the index the model's output layer predicts, and it mirrors DR_CLASSES in
+// ml/types.py. Reordering here without retraining silently relabels every
+// prediction in the app.
 export const DR_CLASSES = [
   "No DR",
   "Mild",
@@ -60,8 +61,8 @@ export interface AnalysisRecord {
   fileSizeBytes: number;
   mimeType: string;
   quality: QualityCheck;
-  // Real predictions are only ever populated once ml/inference.py (Phase 3)
-  // is wired up through the backend. Never fabricated client-side.
+  // Only ever set from a backend response. Null is a real state the UI has
+  // to render — "no model loaded" — and is never filled in with a default.
   prediction: PredictionResult | null;
   // Set when the backend (app/backend) actually processed this image —
   // absent when the backend was unreachable and the app fell back to

@@ -4,26 +4,18 @@ import { usePreferences } from "./usePreferences";
 import { useCommandPalette } from "./useCommandPalette";
 import { dispatchShortcut, type ShortcutEventName } from "../lib/shortcutBus";
 import type { ShortcutAction } from "../lib/preferences";
+import { normalizeShortcutKey } from "../lib/formatShortcut";
 
 function parseBinding(binding: string): { mod: boolean; key: string } {
   const parts = binding.toLowerCase().split("+");
   return { mod: parts.includes("mod"), key: parts[parts.length - 1] };
 }
 
-// "+"/"-" are what Settings shows and what most keyboards produce only with
-// Shift held (unshifted keys are "=" and "_" on a US layout) — accept both
-// so the zoom shortcuts work without requiring Shift.
-function normalizeKey(key: string): string {
-  if (key === "=") return "+";
-  if (key === "_") return "-";
-  return key;
-}
-
 function matchesBinding(e: KeyboardEvent, binding: string): boolean {
   const { mod, key } = parseBinding(binding);
   const hasMod = e.metaKey || e.ctrlKey;
   if (mod !== hasMod) return false;
-  return normalizeKey(e.key).toLowerCase() === key.toLowerCase();
+  return normalizeShortcutKey(e.key).toLowerCase() === key.toLowerCase();
 }
 
 // Actions that only make sense wherever the relevant component is mounted

@@ -10,7 +10,7 @@ import {
   saveAnalysis,
 } from "../lib/storage";
 import type { AnalysisRecord } from "../lib/types";
-import { toBackendFields } from "../lib/analyzeFlow";
+import { toBackendFields, toExplainabilityBlobs } from "../lib/analyzeFlow";
 import { analyzeImage } from "../lib/api";
 import { usePreferences } from "../hooks/usePreferences";
 import { useToast } from "../hooks/useToast";
@@ -216,16 +216,7 @@ export default function Analysis() {
       }
 
       if (preferences.storeAnalysisResults && !ephemeral) {
-        await saveAnalysis(
-          updated,
-          sourceFile,
-          result.croppedPreviewBlob && result.heatmapBlob
-            ? {
-                croppedPreviewBlob: result.croppedPreviewBlob,
-                heatmapBlob: result.heatmapBlob,
-              }
-            : undefined,
-        );
+        await saveAnalysis(updated, sourceFile, toExplainabilityBlobs(result));
       }
       toast.success("Analysis complete.");
     } finally {

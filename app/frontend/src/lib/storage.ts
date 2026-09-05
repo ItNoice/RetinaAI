@@ -1,8 +1,11 @@
-// All analysis data lives in the browser's IndexedDB — nothing is uploaded
-// anywhere except to the backend for analysis itself. Each analysis is
-// stored as a JSON record plus its original image blob, and — when a model
-// produced a real prediction — the cropped preview and Grad-CAM heatmap
-// blobs the backend returned, keyed by the same id.
+// Everything the app remembers lives in this browser's IndexedDB. Retinal
+// images are medical data; the only place any of it is ever sent is the
+// backend the user is running themselves, for the analysis they asked for.
+//
+// One analysis spans up to four keys sharing an id: the JSON record, the
+// original image, and — when a model actually ran — the cropped preview and
+// Grad-CAM heatmap. Prefixed string keys rather than four object stores,
+// because idb-keyval gives us one store and that's enough here.
 import { createStore, get, set, del, keys, clear } from "idb-keyval";
 import type { AnalysisRecord } from "./types";
 
@@ -23,12 +26,17 @@ export async function saveAnalysis(
   imageBlob: Blob,
   explainability?: ExplainabilityBlobs,
 ): Promise<void> {
-  await set(recordKey(record.id), record, store);
-  await set(imageKey(record.id), imageBlob, store);
+  const writes = [
+    set(recordKey(record.id), record, store),
+    set(imageKey(record.id), imageBlob, store),
+  ];
   if (explainability) {
-    await set(croppedPreviewKey(record.id), explainability.croppedPreviewBlob, store);
-    await set(heatmapKey(record.id), explainability.heatmapBlob, store);
+    writes.push(
+      set(croppedPreviewKey(record.id), explainability.croppedPreviewBlob, store),
+      set(heatmapKey(record.id), explainability.heatmapBlob, store),
+    );
   }
+  await Promise.all(writes);
 }
 
 export async function updateAnalysis(record: AnalysisRecord): Promise<void> {
@@ -55,6 +63,8 @@ export async function getHeatmapBlob(id: string): Promise<Blob | undefined> {
   return get(heatmapKey(id), store);
 }
 
+// Newest first — every list view in the app wants that order, so it's done
+// here once rather than at each call site.
 export async function listAnalyses(): Promise<AnalysisRecord[]> {
   const allKeys = await keys(store);
   const recordKeys = allKeys.filter(
@@ -79,10 +89,8 @@ export async function clearAllAnalyses(): Promise<void> {
   await clear(store);
 }
 
-// Settings > Advanced > "Model cache" — a read-only count of how many
-// analyses currently have a cached Grad-CAM heatmap + cropped preview on
-// this device. Clearing them is StorageSettings' existing
-// clearCachedPreviews(), which this doesn't duplicate.
+// Counts heatmap keys rather than cropped-preview keys — the two are always
+// written together, so either works, and one is enough.
 export async function getCacheInfo(): Promise<{ cachedCount: number }> {
   const allKeys = await keys(store);
   const cachedCount = allKeys.filter(

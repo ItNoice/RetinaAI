@@ -1,11 +1,23 @@
+// Export paths for a single analysis: the JSON download and the shared pieces
+// the print report reuses.
+//
+// The disclaimer travels with every export deliberately. A JSON file or a
+// printed page outlives the app's UI, and the framing that this isn't a
+// diagnosis has to survive with it.
 import type { AnalysisRecord } from "./types";
 
-const DISCLAIMER =
+export const DISCLAIMER =
   "RetinaAI is an educational and research prototype. It is not a medical " +
   "device and should not be used to diagnose, treat, or make clinical " +
   "decisions about any person. Model predictions may be incorrect, and " +
   "performance may differ across populations, cameras, image quality, and " +
   "clinical settings.";
+
+// The report adds this; the JSON export doesn't, since a JSON payload has no
+// images in it to misread.
+export const HEATMAP_DISCLAIMER =
+  "A Grad-CAM heatmap, when shown, highlights regions that influenced the " +
+  "model's prediction — it does not prove those regions contain disease.";
 
 // Shared by JSON export and the print report — "anonymize" strips the
 // original filename and exact timestamp, keeping only relative timing, so
@@ -42,6 +54,8 @@ export function buildExportPayload(record: AnalysisRecord, anonymize: boolean) {
   };
 }
 
+// Anchor-click download: no File System Access API, no dependency, works in
+// every browser this app targets.
 export function exportAnalysisJson(record: AnalysisRecord, anonymize: boolean): void {
   const payload = buildExportPayload(record, anonymize);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {

@@ -5,16 +5,10 @@ import { DR_CLASSES, type AnalysisRecord, type DRClass } from "../lib/types";
 import AnalysisThumbnail from "../components/AnalysisThumbnail";
 import { useToast } from "../hooks/useToast";
 import AnalysisStatusBadge from "../components/AnalysisStatusBadge";
+import { formatDateTime, formatPercent } from "../lib/format";
 
 type SortKey = "newest" | "oldest" | "confidence" | "class";
 type ViewMode = "grid" | "table";
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 export default function History() {
   const navigate = useNavigate();
@@ -37,29 +31,36 @@ export default function History() {
 
   const visible = useMemo(() => {
     if (!records) return [];
-    const q = search.trim().toLowerCase();
-    let list = records.filter((r) => {
-      if (q && !(r.label ?? r.filename).toLowerCase().includes(q)) return false;
+
+    const query = search.trim().toLowerCase();
+    const matching = records.filter((r) => {
+      if (query && !(r.label ?? r.filename).toLowerCase().includes(query)) return false;
       if (classFilter !== "all" && r.prediction?.predictedClass !== classFilter) return false;
+      // "Flagged only" — the checkbox reads as a filter for problems, so it
+      // keeps the records that failed a check, not the ones that passed.
       if (qualityOnly && r.quality.passed) return false;
       return true;
     });
-    list = [...list].sort((a, b) => {
+
+    // filter() already gave us a fresh array, so sorting in place is safe.
+    return matching.sort((a, b) => {
       switch (sortBy) {
         case "oldest":
           return a.createdAt - b.createdAt;
+        // Unanalyzed records have no confidence and no class. -1 and U+FFFF
+        // (the last code point localeCompare will order) park them at the
+        // bottom of either sort instead of interleaving them with results.
         case "confidence":
           return (b.prediction?.confidence ?? -1) - (a.prediction?.confidence ?? -1);
         case "class":
-          return (a.prediction?.predictedClass ?? "￿").localeCompare(
-            b.prediction?.predictedClass ?? "￿",
+          return (a.prediction?.predictedClass ?? "\uFFFF").localeCompare(
+            b.prediction?.predictedClass ?? "\uFFFF",
           );
         case "newest":
         default:
           return b.createdAt - a.createdAt;
       }
     });
-    return list;
   }, [records, search, sortBy, classFilter, qualityOnly]);
 
   const toggleSelect = (id: string) => {
@@ -242,7 +243,7 @@ export default function History() {
                         </p>
                       </Link>
                     )}
-                    <p className="text-xs text-clinic-500 mt-0.5">{formatDate(r.createdAt)}</p>
+                    <p className="text-xs text-clinic-500 mt-0.5">{formatDateTime(r.createdAt)}</p>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <AnalysisStatusBadge record={r} />
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -352,7 +353,7 @@ export default function History() {
                           )}
                         </td>
                         <td className="p-3 text-clinic-600 whitespace-nowrap">
-                          {formatDate(r.createdAt)}
+                          {formatDateTime(r.createdAt)}
                         </td>
                         <td className="p-3">
                           <AnalysisStatusBadge record={r} />
@@ -362,7 +363,7 @@ export default function History() {
                         </td>
                         <td className="p-3 text-right tabular text-clinic-800">
                           {r.prediction
-                            ? `${(r.prediction.confidence * 100).toFixed(1)}%`
+                            ? formatPercent(r.prediction.confidence, 1)
                             : "—"}
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">

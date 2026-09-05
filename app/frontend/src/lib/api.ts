@@ -1,8 +1,14 @@
-// Thin client for the RetinaAI backend. Every function returns `null` on
-// network failure (backend not running, offline, etc.) rather than throwing
-// — callers fall back to client-only behavior so the app stays usable
-// without a backend, per the project's "keep functional at every stage"
-// development philosophy.
+// Thin client for the RetinaAI backend.
+//
+// Nothing here throws on network failure. A missing backend is an ordinary
+// state for this app — you can open it with nothing running and still upload,
+// inspect and browse images — so every call returns null instead and lets the
+// caller degrade. Errors that the *user* can act on (a rejected file) are the
+// exception; see analyzeImage.
+//
+// The Api* interfaces below mirror app/backend/schemas.py verbatim, snake_case
+// and all. The mapping to camelCase happens here, at the boundary, so the rest
+// of the app never sees the wire format.
 import type {
   DRClass,
   EpochRecord,
@@ -27,6 +33,9 @@ function getApiBaseUrl(): string {
   );
 }
 
+// Off unless Settings > Advanced > Debug logging is on. Worth having: most
+// support questions about this app turn out to be "which URL was it actually
+// calling".
 function debugLog(...args: unknown[]): void {
   if (readStoredPreferences().debugLogging) {
     console.log("[RetinaAI]", ...args);
@@ -82,6 +91,8 @@ export interface AnalyzeApiResult {
   heatmapBlob: Blob | null;
 }
 
+// The heatmap and preview come back inline as base64 rather than as separate
+// endpoints, so a result is one round trip and can't half-arrive.
 export function base64PngToBlob(base64: string): Blob {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   return new Blob([bytes], { type: "image/png" });
@@ -150,9 +161,7 @@ async function safeGet<T>(path: string): Promise<T | null> {
   }
 }
 
-export async function fetchModelStatus(): Promise<ModelStatusInfo | null> {
-  const data = await safeGet<ApiModelStatus>("/api/model/status");
-  if (!data) return null;
+function toModelStatus(data: ApiModelStatus): ModelStatusInfo {
   return {
     available: data.available,
     name: data.name,
@@ -164,22 +173,24 @@ export async function fetchModelStatus(): Promise<ModelStatusInfo | null> {
   };
 }
 
+export async function fetchModelStatus(): Promise<ModelStatusInfo | null> {
+  const data = await safeGet<ApiModelStatus>("/api/model/status");
+  return data ? toModelStatus(data) : null;
+}
+
+// POST rather than GET because it has a side effect: the backend drops its
+// cached checkpoint. Returns the status afterwards, so the caller can tell
+// whether a newly trained model actually loaded.
 export async function reloadModel(): Promise<ModelStatusInfo | null> {
   const url = `${getApiBaseUrl()}/api/model/reload`;
   try {
     debugLog("POST", url);
     const res = await fetch(url, { method: "POST" });
-    if (!res.ok) return null;
-    const data = (await res.json()) as ApiModelStatus;
-    return {
-      available: data.available,
-      name: data.name,
-      version: data.version,
-      architecture: data.architecture,
-      task: data.task,
-      trainedOn: data.trained_on,
-      note: data.note,
-    };
+    if (!res.ok) {
+      debugLog("POST", url, "->", res.status);
+      return null;
+    }
+    return toModelStatus((await res.json()) as ApiModelStatus);
   } catch (err) {
     debugLog("POST", url, "-> network error", err);
     return null;
@@ -251,9 +262,12 @@ export async function fetchMetrics(): Promise<MetricsInfo | null> {
   };
 }
 
-// Distinguishes "backend unreachable" (returns undefined — caller falls
-// back to client-only checks) from "backend rejected the file" (returns an
-// AnalyzeApiError — a real, actionable validation failure to show the user).
+// Three outcomes, and the caller needs to tell them apart:
+//   AnalyzeApiResult  - analyzed (the prediction inside may still be null)
+//   AnalyzeApiError   - the backend rejected the file; show the message
+//   undefined         - backend unreachable; fall back to client-only checks
+// Collapsing the last two into one would mean telling users their image is
+// broken whenever the server happens to be down.
 export async function analyzeImage(
   file: File,
 ): Promise<AnalyzeApiResult | AnalyzeApiError | undefined> {
