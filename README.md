@@ -1,5 +1,8 @@
 # RetinaAI
 
+Hello! I'm Bilal, I used AI to debug and help, because this is my first biomedical program! I'm very proud of this. I acknowledge my use of AI and only used it because it was my first project and didn't know where to start. From now on I'm trying to learn to do this all by myself, and only use AI as it's intended use, a tool. 
+Thank you!
+
 A research prototype for AI-assisted analysis of retinal fundus photographs,
 starting with diabetic retinopathy (DR) severity grading. Built end-to-end —
 real dataset, real model, real training run, real evaluation metrics, real
